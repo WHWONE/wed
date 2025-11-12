@@ -8,6 +8,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let isChordLoop = false;
   let lastNoteIndex = null;
 
+// ===== Melodic Direction System =====
+let lastDirection = 0; // -1 = down, 0 = same, +1 = up
+
+// Probability weights for directional behavior
+let probContinue = 60; // 60% chance to keep same direction
+let probReverse  = 25; // 25% chance to flip direction
+let probRepeat   = 15; // 15% chance to repeat same note
+
+
   // ===== Pattern Bank State =====
   const patterns = { A: [], B: [], C: [], D: [] };
   let activeSlot = "A";
@@ -439,6 +448,15 @@ function durationToBeats(name) {
   });
 
   // ===== Random Note Logic =====
+  // ===== Melodic Direction Picker =====
+  function pickNextDirection() {
+    const r = Math.random() * 100;
+
+    if (r < probRepeat) return 0; // stay on the same note
+    if (r < probRepeat + probReverse) return -lastDirection || -1; // reverse
+    return lastDirection || 1; // continue same direction (default upward)
+  }
+
   function playRandomNoteInKey() {
     const root = keySelect.value;
     let allowed = filterNotesInRange(getScaleNotes(root));
@@ -448,17 +466,23 @@ function durationToBeats(name) {
       return;
     }
     let next;
-    if (lastNoteIndex === null) {
-      next = allowed[Math.floor(Math.random() * allowed.length)];
-      lastNoteIndex = allowed.indexOf(next);
-    } else {
-      const interval = weightedRandomInterval(intervalWeights);
-      const dir = Math.random() < 0.5 ? -1 : 1;
-      let newIndex = lastNoteIndex + dir * Math.round(interval / 2);
-      newIndex = Math.max(0, Math.min(newIndex, allowed.length - 1));
-      next = allowed[newIndex];
-      lastNoteIndex = newIndex;
-    }
+if (lastNoteIndex === null) {
+  // first note: choose random start point
+  next = allowed[Math.floor(Math.random() * allowed.length)];
+  lastNoteIndex = allowed.indexOf(next);
+  lastDirection = 1; // start moving upward
+} else {
+  const interval = weightedRandomInterval(intervalWeights);
+  const dir = pickNextDirection();
+
+  let newIndex = lastNoteIndex + dir * Math.round(interval / 2);
+  newIndex = Math.max(0, Math.min(newIndex, allowed.length - 1));
+
+  next = allowed[newIndex];
+  lastDirection = dir;
+  lastNoteIndex = newIndex;
+}
+
     const gain = 0.7 + (Math.random() * 0.3 - 0.15);
     piano.play(next, audioCtx.currentTime, { duration: 1.2, gain });
     highlightKey(next);
