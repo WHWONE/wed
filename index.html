@@ -212,15 +212,25 @@
   <div id="controlPanel">
 
     <!-- 🎵 Duration Probability (Left Column) -->
-    <div id="durationMixer">
-      <label>🎵 Whole Notes</label><input type="range" id="durWhole" min="0" max="100" value="10"><span id="valWhole">10%</span>
-      <label>Half Notes</label><input type="range" id="durHalf" min="0" max="100" value="15"><span id="valHalf">15%</span>
-      <label>Quarter Notes</label><input type="range" id="durQuarter" min="0" max="100" value="40"><span id="valQuarter">40%</span>
-      <label>Eighth Notes</label><input type="range" id="durEighth" min="0" max="100" value="20"><span id="valEighth">20%</span>
-      <label>Sixteenth Notes</label><input type="range" id="durSixteenth" min="0" max="100" value="10"><span id="valSixteenth">10%</span>
-      <label>Dotted Quarter</label><input type="range" id="durDottedQuarter" min="0" max="100" value="5"><span id="valDottedQuarter">5%</span>
-      <!-- room for expansion: dotted eighths, dotted halves, etc. -->
-    </div>
+<div id="durationMixer">
+  <label>🎵 Whole Notes</label><input type="range" id="durWhole" min="0" max="100" value="10"><span id="valWhole">10%</span>
+
+  <label>Half Notes</label><input type="range" id="durHalf" min="0" max="100" value="15"><span id="valHalf">15%</span>
+  <label>Dotted Half</label><input type="range" id="durDottedHalf" min="0" max="100" value="5"><span id="valDottedHalf">5%</span>
+
+  <label>Quarter Notes</label><input type="range" id="durQuarter" min="0" max="100" value="40"><span id="valQuarter">40%</span>
+  <label>Dotted Quarter</label><input type="range" id="durDottedQuarter" min="0" max="100" value="5"><span id="valDottedQuarter">5%</span>
+  <label>Quarter Triplet</label><input type="range" id="durQuarterTriplet" min="0" max="100" value="5"><span id="valQuarterTriplet">5%</span>
+
+  <label>Eighth Notes</label><input type="range" id="durEighth" min="0" max="100" value="20"><span id="valEighth">20%</span>
+  <label>Dotted Eighth</label><input type="range" id="durDottedEighth" min="0" max="100" value="5"><span id="valDottedEighth">5%</span>
+  <label>Eighth Triplet</label><input type="range" id="durEighthTriplet" min="0" max="100" value="5"><span id="valEighthTriplet">5%</span>
+
+  <label>Sixteenth Notes</label><input type="range" id="durSixteenth" min="0" max="100" value="10"><span id="valSixteenth">10%</span>
+  <label>Dotted Sixteenth</label><input type="range" id="durDottedSixteenth" min="0" max="100" value="3"><span id="valDottedSixteenth">3%</span>
+  <label>Sixteenth Triplet</label><input type="range" id="durSixteenthTriplet" min="0" max="100" value="3"><span id="valSixteenthTriplet">3%</span>
+</div>
+
 
     <!-- 🎛 Tempo, Dynamics, and Interval Mixer (Right Column) -->
     <div id="tempoDynamics">

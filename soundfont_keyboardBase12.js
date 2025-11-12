@@ -170,23 +170,51 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== Duration Weights =====
-  const durationSliders = {
-    whole: document.getElementById("durWhole"),
-    half: document.getElementById("durHalf"),
-    quarter: document.getElementById("durQuarter"),
-    eighth: document.getElementById("durEighth"),
-    sixteenth: document.getElementById("durSixteenth"),
-    dotted_quarter: document.getElementById("durDottedQuarter")
-  };
-  const durationLabels = {
-    whole: document.getElementById("valWhole"),
-    half: document.getElementById("valHalf"),
-    quarter: document.getElementById("valQuarter"),
-    eighth: document.getElementById("valEighth"),
-    sixteenth: document.getElementById("valSixteenth"),
-    dotted_quarter: document.getElementById("valDottedQuarter")
-  };
-  let durationWeights = { whole:10, half:15, quarter:40, eighth:20, sixteenth:10, dotted_quarter:5 };
+const durationSliders = {
+  whole: document.getElementById("durWhole"),
+  half: document.getElementById("durHalf"),
+  dotted_half: document.getElementById("durDottedHalf"),
+  quarter: document.getElementById("durQuarter"),
+  dotted_quarter: document.getElementById("durDottedQuarter"),
+  quarter_triplet: document.getElementById("durQuarterTriplet"),
+  eighth: document.getElementById("durEighth"),
+  dotted_eighth: document.getElementById("durDottedEighth"),
+  eighth_triplet: document.getElementById("durEighthTriplet"),
+  sixteenth: document.getElementById("durSixteenth"),
+  dotted_sixteenth: document.getElementById("durDottedSixteenth"),
+  sixteenth_triplet: document.getElementById("durSixteenthTriplet")
+};
+
+const durationLabels = {
+  whole: document.getElementById("valWhole"),
+  half: document.getElementById("valHalf"),
+  dotted_half: document.getElementById("valDottedHalf"),
+  quarter: document.getElementById("valQuarter"),
+  dotted_quarter: document.getElementById("valDottedQuarter"),
+  quarter_triplet: document.getElementById("valQuarterTriplet"),
+  eighth: document.getElementById("valEighth"),
+  dotted_eighth: document.getElementById("valDottedEighth"),
+  eighth_triplet: document.getElementById("valEighthTriplet"),
+  sixteenth: document.getElementById("valSixteenth"),
+  dotted_sixteenth: document.getElementById("valDottedSixteenth"),
+  sixteenth_triplet: document.getElementById("valSixteenthTriplet")
+};
+
+  let durationWeights = {
+  whole: 10,
+  half: 15,
+  dotted_half: 5,
+  quarter: 40,
+  dotted_quarter: 5,
+  quarter_triplet: 5,
+  eighth: 20,
+  dotted_eighth: 5,
+  eighth_triplet: 5,
+  sixteenth: 10,
+  dotted_sixteenth: 3,
+  sixteenth_triplet: 3
+};
+
   Object.entries(durationSliders).forEach(([name, el]) => {
     el.addEventListener("input", e => {
       const val = parseInt(e.target.value);
@@ -194,13 +222,24 @@ document.addEventListener("DOMContentLoaded", () => {
       durationLabels[name].textContent = val + "%";
     });
   });
-  function durationToBeats(name) {
-    const map = {
-      whole: 4, half: 2, quarter: 1,
-      eighth: 0.5, sixteenth: 0.25, dotted_quarter: 1.5
-    };
-    return map[name] || 1;
-  }
+function durationToBeats(name) {
+  const map = {
+    whole: 4,
+    half: 2,
+    dotted_half: 3,
+    quarter: 1,
+    dotted_quarter: 1.5,
+    quarter_triplet: 2 / 3,
+    eighth: 0.5,
+    dotted_eighth: 0.75,
+    eighth_triplet: 1 / 3,
+    sixteenth: 0.25,
+    dotted_sixteenth: 0.375,
+    sixteenth_triplet: 1 / 6
+  };
+  return map[name] || 1;
+}
+
   function pickWeightedDuration() {
     const total = Object.values(durationWeights).reduce((a, b) => a + b, 0);
     const r = Math.random() * total;
