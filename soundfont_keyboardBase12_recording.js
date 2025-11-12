@@ -663,6 +663,18 @@ if (humanizeToggle.checked && timingVariation > 0) {
     try { if (piano.output && piano.output.connect) piano.output.connect(safariDest); } catch (e) {}
     if (startAudioRecBtn && stopAudioRecBtn) { startAudioRecBtn.disabled = false; stopAudioRecBtn.disabled = true; }
 
+
+// Connect piano output to both speakers and recorder node
+try {
+  if (piano && piano.output && piano.output.connect) {
+    piano.output.connect(audioCtx.destination);
+    if (recNode) piano.output.connect(recNode);
+  }
+  console.log("🎧 Piano output connected to recorder node:", !!(piano && recNode));
+} catch (e) {
+  console.error("Audio routing error:", e);
+}
+
     playRandom.disabled = false;
     playChordBtn.disabled = false;
     playChordLoopBtn.disabled = false;
