@@ -27,6 +27,7 @@ Soundfont.instrument(audioCtx, 'acoustic_grand_piano', { format: 'mp3', soundfon
     startAudioRecBtn.disabled = false;
     stopAudioRecBtn.disabled = true;
 
+
     // Ensure we hear piano output normally
     try {
       if (piano.output && piano.output.connect) {
