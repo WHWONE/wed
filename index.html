@@ -51,7 +51,6 @@
     height:150px;
     z-index:2;
   }
-
   .white {
     width:60px;
     height:240px;
@@ -70,7 +69,6 @@
     position:absolute;
     cursor:pointer;
   }
-
   .white.active {
     background:#8ef;
     box-shadow:0 0 20px #00bfff;
@@ -79,18 +77,26 @@
     background:#00bfff;
     box-shadow:0 0 20px #00bfff;
   }
-
   #status {
     margin-top:16px;
     opacity:0.8;
   }
 
-  /* Interval Mixer */
-  #intervalMixer {
-    margin-top:16px;
+  /* ===== Control Panel Two-Column Layout ===== */
+  #controlPanel {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 20px;
+    margin-top: 20px;
+    width: 90%;
+    max-width: 1200px;
+  }
+  #intervalMixer, #tempoDynamics {
+    flex: 1 1 45%;
     display:grid;
-    grid-template-columns:160px 200px 50px;
-    row-gap:6px;
+    grid-template-columns:180px 200px 60px;
+    row-gap:8px;
     column-gap:8px;
     align-items:center;
     font-size:0.95rem;
@@ -98,17 +104,6 @@
   input[type=range] {
     width:200px;
     cursor:pointer;
-  }
-
-  /* Tempo & Dynamics */
-  #tempoDynamics {
-    margin-top:20px;
-    display:grid;
-    grid-template-columns:180px 200px 60px;
-    row-gap:8px;
-    column-gap:8px;
-    align-items:center;
-    font-size:0.95rem;
   }
 
   /* Pattern Controls */
@@ -121,13 +116,11 @@
     flex-wrap: wrap;
     justify-content: center;
   }
-
   #patternBank {
     display:inline-flex;
     gap:6px;
     margin-right:8px;
   }
-
   .patternSlot {
     background:#555;
     border:none;
@@ -141,10 +134,27 @@
     background:#00bfff;
     box-shadow:0 0 8px #00bfff;
   }
-
   #patternInfo {
     opacity:0.75;
     margin-left:4px;
+  }
+
+  /* Duration Mixer */
+  #durationMixer {
+    margin-top: 20px;
+    display:grid;
+    grid-template-columns:180px 200px 60px;
+    row-gap:8px;
+    column-gap:8px;
+    align-items:center;
+    font-size:0.95rem;
+  }
+
+  @media (max-width: 800px) {
+    #controlPanel {
+      flex-direction: column;
+      align-items: center;
+    }
   }
 </style>
 </head>
@@ -176,14 +186,13 @@
       <option value="chromatic">Chromatic (All Notes)</option>
     </select>
 
-<!-- 🎵 Note Range Controls -->
-<div id="noteRangeControls" style="margin-top:10px;">
-  <label for="lowNoteSelect">Low Note:</label>
-  <select id="lowNoteSelect"></select>
-
-  <label for="highNoteSelect">High Note:</label>
-  <select id="highNoteSelect"></select>
-</div>
+    <!-- 🎵 Note Range Controls -->
+    <div id="noteRangeControls" style="margin-top:10px;">
+      <label for="lowNoteSelect">Low Note:</label>
+      <select id="lowNoteSelect"></select>
+      <label for="highNoteSelect">High Note:</label>
+      <select id="highNoteSelect"></select>
+    </div>
 
     <button id="playRandom">Play One Note</button>
     <button id="playChord">Play One Chord</button>
@@ -199,49 +208,57 @@
 
   <p id="status">Loading SoundFont…</p>
 
-  <!-- 🎚 Interval Mixer -->
-  <div id="intervalMixer">
-    <label for="w0">🔁 Same note</label>
-    <input type="range" id="w0" min="0" max="50" value="15" step="1"><span id="v0">15%</span>
+  <!-- Two-column Control Panel -->
+  <div id="controlPanel">
 
-    <label for="w2">2nds</label>
-    <input type="range" id="w2" min="0" max="50" value="30" step="1"><span id="v2">30%</span>
+    <!-- 🎚 Interval Mixer (Left Column) -->
+    <div id="intervalMixer">
+      <label for="w0">🔁 Same note</label>
+      <input type="range" id="w0" min="0" max="50" value="15"><span id="v0">15%</span>
+      <label for="w2">2nds</label>
+      <input type="range" id="w2" min="0" max="50" value="30"><span id="v2">30%</span>
+      <label for="w3">3rds</label>
+      <input type="range" id="w3" min="0" max="50" value="20"><span id="v3">20%</span>
+      <label for="w5">4ths</label>
+      <input type="range" id="w5" min="0" max="50" value="10"><span id="v5">10%</span>
+      <label for="w7">5ths</label>
+      <input type="range" id="w7" min="0" max="50" value="8"><span id="v7">8%</span>
+      <label for="w9">6ths / Octaves</label>
+      <input type="range" id="w9" min="0" max="50" value="4"><span id="v9">4%</span>
+    </div>
 
-    <label for="w3">3rds</label>
-    <input type="range" id="w3" min="0" max="50" value="20" step="1"><span id="v3">20%</span>
+    <!-- 🎛 Tempo & Dynamics (Right Column) -->
+    <div id="tempoDynamics">
+      <label for="tempoSlider">⏱ Tempo (BPM)</label>
+      <input type="range" id="tempoSlider" min="40" max="240" value="90">
+      <span id="tempoValue">90</span>
 
-    <label for="w5">4ths</label>
-    <input type="range" id="w5" min="0" max="50" value="10" step="1"><span id="v5">10%</span>
+      <label for="velocitySlider">🎚 Dynamic Intensity</label>
+      <input type="range" id="velocitySlider" min="0.3" max="1.0" value="0.7" step="0.01">
+      <span id="velocityValue">70%</span>
 
-    <label for="w7">5ths</label>
-    <input type="range" id="w7" min="0" max="50" value="8" step="1"><span id="v7">8%</span>
+      <label for="humanizeToggle">🤖 Humanize Swing</label>
+      <input type="checkbox" id="humanizeToggle" checked><span>On</span>
 
-    <label for="w9">6ths / Octaves</label>
-    <input type="range" id="w9" min="0" max="50" value="4" step="1"><span id="v9">4%</span>
+      <label for="restSlider">🕳 Rest Probability</label>
+      <input type="range" id="restSlider" min="0" max="100" value="20"><span id="restValue">20%</span>
+
+      <label for="timingSlider">🎼 Timing Variation (ms)</label>
+      <input type="range" id="timingSlider" min="0" max="60" value="30"><span id="timingValue">30 ms</span>
+
+      <!-- 🎵 Duration Probability Sliders -->
+      <div id="durationMixer">
+        <label>🎵 Whole Notes</label><input type="range" id="durWhole" min="0" max="100" value="10"><span id="valWhole">10%</span>
+        <label>Half Notes</label><input type="range" id="durHalf" min="0" max="100" value="15"><span id="valHalf">15%</span>
+        <label>Quarter Notes</label><input type="range" id="durQuarter" min="0" max="100" value="40"><span id="valQuarter">40%</span>
+        <label>Eighth Notes</label><input type="range" id="durEighth" min="0" max="100" value="20"><span id="valEighth">20%</span>
+        <label>Sixteenth Notes</label><input type="range" id="durSixteenth" min="0" max="100" value="10"><span id="valSixteenth">10%</span>
+        <label>Dotted Quarter</label><input type="range" id="durDottedQuarter" min="0" max="100" value="5"><span id="valDottedQuarter">5%</span>
+      </div>
+    </div>
   </div>
 
-  <!-- 🎛 Tempo & Dynamics -->
-  <div id="tempoDynamics">
-    <label for="tempoSlider">⏱ Tempo (BPM)</label>
-    <input type="range" id="tempoSlider" min="40" max="240" value="90" step="1">
-    <span id="tempoValue">90</span>
-
-    <label for="velocitySlider">🎚 Dynamic Intensity</label>
-    <input type="range" id="velocitySlider" min="0.3" max="1.0" value="0.7" step="0.01">
-    <span id="velocityValue">70%</span>
-
-    <label for="humanizeToggle">🤖 Humanize Swing</label>
-    <input type="checkbox" id="humanizeToggle" checked>
-    <span>On</span>
-<label for="restSlider">🕳 Rest Probability</label>
-  <input type="range" id="restSlider" min="0" max="100" value="20" step="1">
-  <span id="restValue">20%</span>
-   <label for="timingSlider">🎼 Timing Variation (ms)</label>
-  <input type="range" id="timingSlider" min="0" max="60" value="30" step="1">
-  <span id="timingValue">30 ms</span>
-  </div>
-
-  <!-- 🎼 Pattern Memory Controls + Multi-Slot -->
+  <!-- 🎼 Pattern Memory Controls -->
   <div id="patternControls">
     <div id="patternBank">
       <button class="patternSlot active" data-slot="A">A</button>
@@ -249,39 +266,14 @@
       <button class="patternSlot" data-slot="C">C</button>
       <button class="patternSlot" data-slot="D">D</button>
     </div>
-
     <button id="startRecord">⏺ Record</button>
     <button id="stopRecord" disabled>⏹ Stop Rec</button>
     <button id="playPattern">▶️ Play Pattern</button>
     <button id="clearPattern">🗑 Clear</button>
-
     <span id="patternInfo">Active Pattern: A | No events recorded.</span>
-  </div>
-
-  <!-- 🎼 Measure Composer -->
-  <div id="measureComposer" style="margin-top:24px; text-align:center;">
-    <h3>🪶 Measure Composer</h3>
-    <label for="beatsPerMeasure">Beats / Measure:</label>
-    <input type="number" id="beatsPerMeasure" min="1" max="12" value="4" style="width:60px;">
-    
-    <label for="noteDuration">Note Duration:</label>
-    <select id="noteDuration">
-      <option value="whole">Whole</option>
-      <option value="half">Half</option>
-      <option value="quarter" selected>Quarter</option>
-      <option value="eighth">Eighth</option>
-    </select>
-
-    <button id="addMeasureNote">➕ Add Note</button>
-    <button id="playMeasure">▶️ Play Measure</button>
-
-    <p id="measureStatus">No notes added yet.</p>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
   <script src="soundfont_keyboardBase12.js"></script>
-
-
-
 </body>
 </html>
