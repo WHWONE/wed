@@ -258,6 +258,26 @@
     <span id="patternInfo">Active Pattern: A | No events recorded.</span>
   </div>
 
+  <!-- 🎼 Measure Composer -->
+  <div id="measureComposer" style="margin-top:24px; text-align:center;">
+    <h3>🪶 Measure Composer</h3>
+    <label for="beatsPerMeasure">Beats / Measure:</label>
+    <input type="number" id="beatsPerMeasure" min="1" max="12" value="4" style="width:60px;">
+    
+    <label for="noteDuration">Note Duration:</label>
+    <select id="noteDuration">
+      <option value="whole">Whole</option>
+      <option value="half">Half</option>
+      <option value="quarter" selected>Quarter</option>
+      <option value="eighth">Eighth</option>
+    </select>
+
+    <button id="addMeasureNote">➕ Add Note</button>
+    <button id="playMeasure">▶️ Play Measure</button>
+
+    <p id="measureStatus">No notes added yet.</p>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
   <script src="soundfont_keyboardBase12.js"></script>
 </body>

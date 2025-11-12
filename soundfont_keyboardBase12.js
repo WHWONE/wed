@@ -464,6 +464,63 @@ if (humanizeToggle.checked && timingVariation > 0) {
   });
 }
   // ===== SoundFont Load =====
+// ====== 🎼 MEASURE / NOTE DURATION SYSTEM ======
+const measureNotes = [];
+const beatsPerMeasureInput = document.getElementById("beatsPerMeasure");
+const noteDurationSelect = document.getElementById("noteDuration");
+const addMeasureNoteBtn = document.getElementById("addMeasureNote");
+const playMeasureBtn = document.getElementById("playMeasure");
+const measureStatus = document.getElementById("measureStatus");
+
+// Map durations (in beats)
+const DURATION_BEATS = {
+  whole: 4,
+  half: 2,
+  quarter: 1,
+  eighth: 0.5
+};
+
+addMeasureNoteBtn.addEventListener("click", () => {
+  const durType = noteDurationSelect.value;
+  const durBeats = DURATION_BEATS[durType];
+  const root = keySelect.value;
+  let allowed = getScaleNotes(root);
+  allowed = filterNotesInRange(allowed);
+  if (!allowed.length) return;
+
+  const note = allowed[Math.floor(Math.random() * allowed.length)];
+  measureNotes.push({ note, durBeats });
+  updateMeasureDisplay();
+});
+
+function updateMeasureDisplay() {
+  if (!measureNotes.length) {
+    measureStatus.textContent = "No notes added yet.";
+    return;
+  }
+  const totalBeats = measureNotes.reduce((a, b) => a + b.durBeats, 0);
+  const measureCap = parseInt(beatsPerMeasureInput.value);
+  const overflow = totalBeats > measureCap ? "⚠️ Measure overflow!" : "";
+  const display = measureNotes.map(n => `${n.note}(${n.durBeats})`).join(" | ");
+  measureStatus.textContent = `Measure: ${display} (${totalBeats}/${measureCap} beats) ${overflow}`;
+}
+
+playMeasureBtn.addEventListener("click", () => {
+  if (!piano || !measureNotes.length) return;
+  const bpmNow = parseInt(tempoSlider.value);
+  const beatMs = 60000 / bpmNow;
+  let startTime = audioCtx.currentTime;
+  measureNotes.forEach(m => {
+    piano.play(m.note, startTime, {
+      duration: (m.durBeats * beatMs) / 1000,
+      gain: dynamicIntensity
+    });
+    highlightKey(m.note);
+    startTime += (m.durBeats * beatMs) / 1000;
+  });
+  status.textContent = `🎵 Playing measure with ${measureNotes.length} notes`;
+});
+
   Soundfont.instrument(audioCtx, "acoustic_grand_piano", {
     soundfont: "FluidR3_GM",
     format: "mp3",
