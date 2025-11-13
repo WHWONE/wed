@@ -156,39 +156,6 @@
       align-items: center;
     }
   }
-
-  /* Melody / Phrase Controls */
-  #melodyPanel {
-    flex: 1 1 30%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    background: #222;
-    padding: 10px;
-    border-radius: 10px;
-    box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-  #melodyPanel h3 {
-    margin-bottom: 10px;
-    font-size: 1.1em;
-    color: #ffe680;
-    text-align: center;
-  }
-  .knob-row {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 10px 15px;
-  }
-  .knob-wrap {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    font-size: 0.8em;
-  }
-
 </style>
 </head>
 <body>
@@ -292,40 +259,6 @@
         <label for="w9">6ths / Octaves</label><input type="range" id="w9" min="0" max="50" value="4"><span id="v9">4%</span>
       </div>
     </div>
-    <!-- 🎵 Melody / Phrase Controls (Third Column) -->
-    <div id="melodyPanel">
-      <h3>Melody / Phrase</h3>
-      <div class="knob-row">
-        <div class="knob-wrap">
-          <label>Phrase Len</label>
-          <canvas id="knobPhraseLen" width="55" height="55"></canvas>
-        </div>
-        <div class="knob-wrap">
-          <label>Phrase Rest %</label>
-          <canvas id="knobPhraseRest" width="55" height="55"></canvas>
-        </div>
-        <div class="knob-wrap">
-          <label>Resolve %</label>
-          <canvas id="knobPhraseResolve" width="55" height="55"></canvas>
-        </div>
-        <div class="knob-wrap">
-          <label>Continue %</label>
-          <canvas id="knobProbContinue" width="55" height="55"></canvas>
-        </div>
-        <div class="knob-wrap">
-          <label>Reverse %</label>
-          <canvas id="knobProbReverse" width="55" height="55"></canvas>
-        </div>
-        <div class="knob-wrap">
-          <label>Repeat %</label>
-          <canvas id="knobProbRepeat" width="55" height="55"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <!-- NexusUI Library -->
-    
-
   </div>
 
 <!-- 🎼 Pattern Memory Controls -->
@@ -343,8 +276,7 @@
     <span id="patternInfo">Active Pattern: A | No events recorded.</span>
   </div>
 
-<script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/nexusui@2.0.11/dist/NexusUI.js"></script>
-<script src="soundfont_keyboardBase12.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
+  <script src="soundfont_keyboardBase12.js"></script>
 </body>
 </html>

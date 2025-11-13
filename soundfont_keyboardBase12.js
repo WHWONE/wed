@@ -72,27 +72,6 @@ let phraseResolveProb = 70; // % chance to resolve to tonic at phrase end
   const stopRecordBtn = document.getElementById("stopRecord");
   const playPatternBtn = document.getElementById("playPattern");
   const clearPatternBtn = document.getElementById("clearPattern");
-// ===== Melody / Phrase Control Knobs =====
-window.addEventListener("load", () => {
-  // Create knobs using NexusUI
-  const knobPhraseLen = new Nexus.Dial("#knobPhraseLen", { min: 4, max: 32, value: phraseLength });
-  const knobPhraseRest = new Nexus.Dial("#knobPhraseRest", { min: 0, max: 100, value: phraseRestProb });
-  const knobPhraseResolve = new Nexus.Dial("#knobPhraseResolve", { min: 0, max: 100, value: phraseResolveProb });
-  const knobContinue = new Nexus.Dial("#knobProbContinue", { min: 0, max: 100, value: probContinue });
-  const knobReverse = new Nexus.Dial("#knobProbReverse", { min: 0, max: 100, value: probReverse });
-  const knobRepeat = new Nexus.Dial("#knobProbRepeat", { min: 0, max: 100, value: probRepeat });
-
-  // Link knob changes to live variables
-  knobPhraseLen.on("change", v => phraseLength = Math.round(v));
-  knobPhraseRest.on("change", v => phraseRestProb = Math.round(v));
-  knobPhraseResolve.on("change", v => phraseResolveProb = Math.round(v));
-  knobContinue.on("change", v => probContinue = Math.round(v));
-  knobReverse.on("change", v => probReverse = Math.round(v));
-  knobRepeat.on("change", v => probRepeat = Math.round(v));
-
-  console.log("🎛 Melody / Phrase knobs initialized.");
-});
-
   const patternInfo = document.getElementById("patternInfo");
   const patternButtons = document.querySelectorAll(".patternSlot");
 
