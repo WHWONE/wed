@@ -82,16 +82,26 @@
     opacity:0.8;
   }
 
-  /* ===== Control Panel Two-Column Layout ===== */
+  /* ===== Control Panel Three-Column Layout ===== */
   #controlPanel {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
+    flex-direction: row;
+    justify-content: center;
+    align-items: flex-start;
     gap: 20px;
+    flex-wrap: nowrap;
     margin-top: 20px;
     width: 90%;
     max-width: 1200px;
   }
+
+  #durationMixer,
+  #tempoDynamics,
+  #melodyPanel {
+    flex: 1 1 30%;
+    min-width: 250px;
+  }
+
   #intervalMixer, #tempoDynamics {
     flex: 1 1 45%;
     display:grid;
@@ -338,6 +348,7 @@
       </div>
     </div>
   </div>
+ </div>
 
 
 <!-- 🎼 Pattern Memory Controls -->
