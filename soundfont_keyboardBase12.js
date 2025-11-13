@@ -15,6 +15,11 @@ let lastDirection = 0; // -1 = down, 0 = same, +1 = up
 let probContinue = 60; // 60% chance to keep same direction
 let probReverse  = 25; // 25% chance to flip direction
 let probRepeat   = 15; // 15% chance to repeat same note
+// ===== Phrase & Cadence System =====
+let phraseLength = 16;     // number of notes per phrase (roughly one bar = 4 notes)
+let phraseCounter = 0;     // counts how many notes played in current phrase
+let phraseRestProb = 30;   // % chance of a short rest after each phrase
+let phraseResolveProb = 70; // % chance to resolve to tonic at phrase end
 
 
   // ===== Pattern Bank State =====
@@ -457,6 +462,19 @@ function durationToBeats(name) {
     return lastDirection || 1; // continue same direction (default upward)
   }
 
+  // ===== Phrase Resolution Picker =====
+  function resolveToTonic(allowed, root) {
+    // Find the note that matches the root (e.g. "C4") or is close to it
+    const tonicMatches = allowed.filter(n => n.startsWith(root));
+    if (tonicMatches.length > 0) {
+      return tonicMatches[Math.floor(Math.random() * tonicMatches.length)];
+    }
+    // Fallback: choose a lower or middle register note
+    const midIndex = Math.floor(allowed.length / 2);
+    return allowed[midIndex];
+  }
+
+
   function playRandomNoteInKey() {
     const root = keySelect.value;
     let allowed = filterNotesInRange(getScaleNotes(root));
@@ -481,6 +499,27 @@ if (lastNoteIndex === null) {
   next = allowed[newIndex];
   lastDirection = dir;
   lastNoteIndex = newIndex;
+  // ===== Phrase Tracking =====
+  phraseCounter++;
+
+  // If phrase is ending, decide whether to cadence or rest
+  if (phraseCounter >= phraseLength) {
+    phraseCounter = 0; // reset phrase counter
+
+    // Possibly cadence to tonic
+    if (Math.random() * 100 < phraseResolveProb) {
+      next = resolveToTonic(allowed, root);
+      lastNoteIndex = allowed.indexOf(next);
+      lastDirection = 0;
+      status.textContent = `🎵 Cadence → ${next}`;
+    }
+
+    // Possibly insert a rest
+    if (Math.random() * 100 < phraseRestProb) {
+      status.textContent = "🤫 Phrase rest";
+      return; // skip playing note
+    }
+  }
 }
 
     const gain = 0.7 + (Math.random() * 0.3 - 0.15);
