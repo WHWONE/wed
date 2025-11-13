@@ -572,4 +572,24 @@ if (lastNoteIndex === null) {
   document.getElementById("startLoop").addEventListener("click", () => startLoop(false));
   playChordLoopBtn.addEventListener("click", () => startLoop(true));
   document.getElementById("stopLoop").addEventListener("click", stopLoop);
+  // ===== Melody / Phrase Control Inputs =====
+  const numPhraseLen = document.getElementById("numPhraseLen");
+  const numPhraseRest = document.getElementById("numPhraseRest");
+  const numPhraseResolve = document.getElementById("numPhraseResolve");
+  const numProbContinue = document.getElementById("numProbContinue");
+  const numProbReverse = document.getElementById("numProbReverse");
+  const numProbRepeat = document.getElementById("numProbRepeat");
+
+  if (numPhraseLen) {
+    numPhraseLen.addEventListener("input", e => phraseLength = parseInt(e.target.value));
+    numPhraseRest.addEventListener("input", e => phraseRestProb = parseInt(e.target.value));
+    numPhraseResolve.addEventListener("input", e => phraseResolveProb = parseInt(e.target.value));
+    numProbContinue.addEventListener("input", e => probContinue = parseInt(e.target.value));
+    numProbReverse.addEventListener("input", e => probReverse = parseInt(e.target.value));
+    numProbRepeat.addEventListener("input", e => probRepeat = parseInt(e.target.value));
+    console.log("🎛 Melody / Phrase number inputs initialized.");
+  } else {
+    console.log("⚠️ Melody / Phrase inputs not found (skipping UI link).");
+  }
+
 });

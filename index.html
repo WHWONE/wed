@@ -106,6 +106,53 @@
     cursor:pointer;
   }
 
+#melodyPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  background: #222;
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: 0 0 6px rgba(255,255,255,0.1);
+  color: white;
+  margin-top: 15px;
+}
+
+#melodyPanel h3 {
+  margin-bottom: 8px;
+  font-size: 1.1em;
+  color: #ffe680;
+  text-align: center;
+}
+
+.number-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 15px;
+}
+
+.num-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.8em;
+  width: 85px;
+}
+
+.num-wrap input[type=number] {
+  width: 60px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 5px;
+  text-align: center;
+  margin-top: 4px;
+  padding: 3px;
+}
+
+
   /* Pattern Controls */
   #patternControls {
     margin-top:18px;
@@ -259,7 +306,68 @@
         <label for="w9">6ths / Octaves</label><input type="range" id="w9" min="0" max="50" value="4"><span id="v9">4%</span>
       </div>
     </div>
+<!-- 🎵 Melody / Phrase Controls (Temporary Numeric Version) -->
+<div id="melodyPanel">
+  <h3>Melody / Phrase</h3>
+  <div class="number-row">
+    <div class="num-wrap">
+      <label>Phrase Len</label>
+      <input type="number" id="numPhraseLen" min="4" max="32" value="16" step="1">
+    </div>
+    <div class="num-wrap">
+      <label>Phrase Rest %</label>
+      <input type="number" id="numPhraseRest" min="0" max="100" value="20" step="5">
+    </div>
+    <div class="num-wrap">
+      <label>Resolve %</label>
+      <input type="number" id="numPhraseResolve" min="0" max="100" value="60" step="5">
+    </div>
+    <div class="num-wrap">
+      <label>Continue %</label>
+      <input type="number" id="numProbContinue" min="0" max="100" value="60" step="5">
+    </div>
+    <div class="num-wrap">
+      <label>Reverse %</label>
+      <input type="number" id="numProbReverse" min="0" max="100" value="25" step="5">
+    </div>
+    <div class="num-wrap">
+      <label>Repeat %</label>
+      <input type="number" id="numProbRepeat" min="0" max="100" value="15" step="5">
+    </div>
   </div>
+</div>
+
+  <!-- 🎵 Melody / Phrase Controls (Numeric Version) -->
+  <div id="melodyPanel">
+    <h3>Melody / Phrase</h3>
+    <div class="number-row">
+      <div class="num-wrap">
+        <label>Phrase Len</label>
+        <input type="number" id="numPhraseLen" min="4" max="32" value="16" step="1">
+      </div>
+      <div class="num-wrap">
+        <label>Phrase Rest %</label>
+        <input type="number" id="numPhraseRest" min="0" max="100" value="20" step="5">
+      </div>
+      <div class="num-wrap">
+        <label>Resolve %</label>
+        <input type="number" id="numPhraseResolve" min="0" max="100" value="60" step="5">
+      </div>
+      <div class="num-wrap">
+        <label>Continue %</label>
+        <input type="number" id="numProbContinue" min="0" max="100" value="60" step="5">
+      </div>
+      <div class="num-wrap">
+        <label>Reverse %</label>
+        <input type="number" id="numProbReverse" min="0" max="100" value="25" step="5">
+      </div>
+      <div class="num-wrap">
+        <label>Repeat %</label>
+        <input type="number" id="numProbRepeat" min="0" max="100" value="15" step="5">
+      </div>
+    </div>
+  </div>
+
 
 <!-- 🎼 Pattern Memory Controls -->
   <div id="patternControls">
