@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>SoundFont Virtual Keyboard – Scales, Modes & Patterns</title>
+
 <style>
   body {
     background: radial-gradient(circle at center, #111, #000);
@@ -15,6 +16,7 @@
     min-height: 100vh;
     padding-top: 40px;
   }
+
   h1 { font-weight: 300; margin-bottom: 10px; }
 
   select, button {
@@ -39,25 +41,29 @@
     justify-content: center;
     user-select: none;
   }
+
   .white-keys { display:flex; position:relative; z-index:1; }
   .black-keys { position:absolute; top:0; left:0; height:150px; z-index:2; }
+
   .white {
     width:60px; height:240px;
     background:white; border:1px solid #000;
     border-radius:0 0 4px 4px; box-sizing:border-box;
     cursor:pointer;
   }
+
   .black {
     width:36px; height:150px; background:black;
     border:1px solid #222; border-radius:0 0 4px 4px;
     position:absolute; cursor:pointer;
   }
+
   .white.active { background:#8ef; box-shadow:0 0 20px #00bfff; }
   .black.active { background:#00bfff; box-shadow:0 0 20px #00bfff; }
 
   #status { margin-top:16px; opacity:0.8; }
 
-  /* ===== Control Panel Three-Column Layout ===== */
+  /* ===== CONTROL PANEL (3 columns) ===== */
   #controlPanel {
     display:flex;
     flex-direction:row;
@@ -75,25 +81,53 @@
     min-width:250px;
   }
 
-  /* 🎚 Compact slider + label grid layout */
+  /* ===== DURATION + TEMPO GRID ===== */
   #durationMixer, #intervalMixer, #tempoDynamics {
     display:grid;
-    grid-template-columns:150px 100px 50px; /* label, slider, value */
+    grid-template-columns:150px 100px 50px; /* label | slider | value */
     row-gap:6px;
     column-gap:4px;
     align-items:center;
     font-size:0.9rem;
   }
 
-  /* 🎚 Slider shrink and spacing */
+  /* 🎚 RESTORE original slider styling */
   input[type=range] {
-    width:100px;       /* 50% smaller than before */
-    cursor:pointer;
-    accent-color:#ffcc00;
-    margin:2px;
+    width:100px;     /* 50% reduction */
+    -webkit-appearance: none;
+    background: transparent;
+    cursor: pointer;
   }
 
-  input[type=range]:hover { opacity:1.0; }
+  /* Track = WHITE */
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #ffffff;
+    border-radius: 3px;
+  }
+  input[type=range]::-moz-range-track {
+    height: 6px;
+    background: #ffffff;
+    border-radius: 3px;
+  }
+
+  /* Thumb = BLUE */
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    height: 14px;
+    width: 14px;
+    border-radius: 50%;
+    background: #2196f3;
+    border: 1px solid #0d47a1;
+    margin-top: -4px;
+  }
+  input[type=range]::-moz-range-thumb {
+    height: 14px;
+    width: 14px;
+    border-radius: 50%;
+    background: #2196f3;
+    border: 1px solid #0d47a1;
+  }
 
   #melodyPanel {
     display:flex;
@@ -167,25 +201,25 @@
     font-size:0.9rem;
   }
   .patternSlot.active { background:#00bfff; box-shadow:0 0 8px #00bfff; }
+
   #patternInfo { opacity:0.75; margin-left:4px; }
 
+  /* MOBILE */
   @media (max-width:800px) {
     #controlPanel { flex-direction:column; align-items:center; }
     #durationMixer, #tempoDynamics, #melodyPanel {
       width:100%; max-width:480px;
     }
-    #durationMixer, #tempoDynamics {
-      grid-template-columns:150px 120px 50px;
-    }
     input[type=range] { width:120px; }
   }
 </style>
 </head>
+
 <body>
   <h1>🎹 SoundFont Virtual Keyboard – Scales, Modes & Patterns</h1>
 
   <div>
-    <label for="keySelect">Key:</label>
+    <label>Key:</label>
     <select id="keySelect">
       <option value="C">C</option><option value="C#">C♯ / D♭</option>
       <option value="D">D</option><option value="D#">D♯ / E♭</option>
@@ -195,7 +229,7 @@
       <option value="A#">A♯ / B♭</option><option value="B">B</option>
     </select>
 
-    <label for="modeSelect">Mode:</label>
+    <label>Mode:</label>
     <select id="modeSelect">
       <option value="ionian">Ionian (Major)</option>
       <option value="dorian">Dorian</option>
@@ -206,10 +240,9 @@
       <option value="locrian">Locrian</option>
       <option value="pent_major">Pentatonic Major</option>
       <option value="pent_minor">Pentatonic Minor</option>
-      <option value="chromatic">Chromatic (All Notes)</option>
+      <option value="chromatic">Chromatic</option>
     </select>
 
-    <!-- 🎵 Note Range Controls -->
     <div id="noteRangeControls" style="margin-top:10px;">
       <label for="lowNoteSelect">Low:</label>
       <select id="lowNoteSelect"></select>
@@ -219,11 +252,12 @@
 
     <button id="playRandom">Play One Note</button>
     <button id="playChord">Play One Chord</button>
-    <button id="playChordLoop">▶️ Chord Loop</button>
-    <button id="startLoop">▶️ Note Loop</button>
-    <button id="stopLoop" disabled>⏹ Stop</button>
+    <button id="playChordLoop">Chord Loop</button>
+    <button id="startLoop">Note Loop</button>
+    <button id="stopLoop" disabled>Stop</button>
   </div>
 
+  <!-- Keyboard -->
   <div id="keyboard">
     <div class="white-keys" id="whiteKeys"></div>
     <div class="black-keys" id="blackKeys"></div>
@@ -231,35 +265,35 @@
 
   <p id="status">Loading SoundFont…</p>
 
-  <!-- Three-column Control Panel -->
+  <!-- CONTROL PANEL -->
   <div id="controlPanel">
 
-    <!-- 🎵 Duration Probability -->
+    <!-- Duration Mixer -->
     <div id="durationMixer">
-      <label>🎵 Whole</label><input type="range" id="durWhole" min="0" max="100" value="10"><span id="valWhole">10%</span>
+      <label>Whole</label><input type="range" id="durWhole" min="0" max="100" value="10"><span id="valWhole">10%</span>
       <label>Half</label><input type="range" id="durHalf" min="0" max="100" value="15"><span id="valHalf">15%</span>
-      <label>Dot Half</label><input type="range" id="durDottedHalf" min="0" max="100" value="5"><span id="valDottedHalf">5%</span>
+      <label>Dotted Half</label><input type="range" id="durDottedHalf" min="0" max="100" value="5"><span id="valDottedHalf">5%</span>
       <label>Quarter</label><input type="range" id="durQuarter" min="0" max="100" value="40"><span id="valQuarter">40%</span>
-      <label>Dot Qtr</label><input type="range" id="durDottedQuarter" min="0" max="100" value="5"><span id="valDottedQuarter">5%</span>
-      <label>Qtr Trip</label><input type="range" id="durQuarterTriplet" min="0" max="100" value="5"><span id="valQuarterTriplet">5%</span>
-      <label>8th</label><input type="range" id="durEighth" min="0" max="100" value="20"><span id="valEighth">20%</span>
-      <label>Dot 8th</label><input type="range" id="durDottedEighth" min="0" max="100" value="5"><span id="valDottedEighth">5%</span>
+      <label>Dotted Qtr</label><input type="range" id="durDottedQuarter" min="0" max="100" value="5"><span id="valDottedQuarter">5%</span>
+      <label>Quarter Trip</label><input type="range" id="durQuarterTriplet" min="0" max="100" value="5"><span id="valQuarterTriplet">5%</span>
+      <label>Eighth</label><input type="range" id="durEighth" min="0" max="100" value="20"><span id="valEighth">20%</span>
+      <label>Dotted 8th</label><input type="range" id="durDottedEighth" min="0" max="100" value="5"><span id="valDottedEighth">5%</span>
       <label>8th Trip</label><input type="range" id="durEighthTriplet" min="0" max="100" value="5"><span id="valEighthTriplet">5%</span>
       <label>16th</label><input type="range" id="durSixteenth" min="0" max="100" value="10"><span id="valSixteenth">10%</span>
-      <label>Dot 16th</label><input type="range" id="durDottedSixteenth" min="0" max="100" value="3"><span id="valDottedSixteenth">3%</span>
+      <label>Dotted 16th</label><input type="range" id="durDottedSixteenth" min="0" max="100" value="3"><span id="valDottedSixteenth">3%</span>
       <label>16th Trip</label><input type="range" id="durSixteenthTriplet" min="0" max="100" value="3"><span id="valSixteenthTriplet">3%</span>
     </div>
 
-    <!-- 🎛 Tempo / Dynamics / Intervals -->
+    <!-- Tempo / Dynamics -->
     <div id="tempoDynamics">
-      <label>⏱ BPM</label><input type="range" id="tempoSlider" min="40" max="240" value="90"><span id="tempoValue">90</span>
-      <label>🎚 Dyn</label><input type="range" id="velocitySlider" min="0.3" max="1.0" value="0.7" step="0.01"><span id="velocityValue">70%</span>
-      <label>🤖 Swing</label><input type="checkbox" id="humanizeToggle" checked><span>On</span>
-      <label>🕳 Rest %</label><input type="range" id="restSlider" min="0" max="100" value="20"><span id="restValue">20%</span>
-      <label>🎼 Var (ms)</label><input type="range" id="timingSlider" min="0" max="60" value="30"><span id="timingValue">30 ms</span>
+      <label>BPM</label><input type="range" id="tempoSlider" min="40" max="240" value="90"><span id="tempoValue">90</span>
+      <label>Dyn Intensity</label><input type="range" id="velocitySlider" min="0.3" max="1.0" value="0.7" step="0.01"><span id="velocityValue">70%</span>
+      <label>Swing</label><input type="checkbox" id="humanizeToggle" checked><span>On</span>
+      <label>Rest %</label><input type="range" id="restSlider" min="0" max="100" value="20"><span id="restValue">20%</span>
+      <label>Timing Var</label><input type="range" id="timingSlider" min="0" max="60" value="30"><span id="timingValue">30 ms</span>
 
       <div id="intervalMixer" style="margin-top:12px;">
-        <label>🔁 Same</label><input type="range" id="w0" min="0" max="50" value="15"><span id="v0">15%</span>
+        <label>Same</label><input type="range" id="w0" min="0" max="50" value="15"><span id="v0">15%</span>
         <label>2nds</label><input type="range" id="w2" min="0" max="50" value="30"><span id="v2">30%</span>
         <label>3rds</label><input type="range" id="w3" min="0" max="50" value="20"><span id="v3">20%</span>
         <label>4ths</label><input type="range" id="w5" min="0" max="50" value="10"><span id="v5">10%</span>
@@ -268,21 +302,22 @@
       </div>
     </div>
 
-    <!-- 🎵 Melody / Phrase Controls -->
+    <!-- Melody / Phrase -->
     <div id="melodyPanel">
       <h3>Melody / Phrase</h3>
       <div class="number-row">
-        <div class="num-wrap"><label>Len</label><input type="number" id="numPhraseLen" min="4" max="32" value="16" step="1"></div>
-        <div class="num-wrap"><label>Rest%</label><input type="number" id="numPhraseRest" min="0" max="100" value="20" step="5"></div>
-        <div class="num-wrap"><label>Res%</label><input type="number" id="numPhraseResolve" min="0" max="100" value="60" step="5"></div>
-        <div class="num-wrap"><label>Cont%</label><input type="number" id="numProbContinue" min="0" max="100" value="60" step="5"></div>
-        <div class="num-wrap"><label>Rev%</label><input type="number" id="numProbReverse" min="0" max="100" value="25" step="5"></div>
-        <div class="num-wrap"><label>Rpt%</label><input type="number" id="numProbRepeat" min="0" max="100" value="15" step="5"></div>
+        <div class="num-wrap"><label>Phrase Len</label><input type="number" id="numPhraseLen" min="4" max="32" value="16"></div>
+        <div class="num-wrap"><label>Phrase Rest %</label><input type="number" id="numPhraseRest" min="0" max="100" value="20"></div>
+        <div class="num-wrap"><label>Resolve %</label><input type="number" id="numPhraseResolve" min="0" max="100" value="60"></div>
+        <div class="num-wrap"><label>Continue %</label><input type="number" id="numProbContinue" min="0" max="100" value="60"></div>
+        <div class="num-wrap"><label>Reverse %</label><input type="number" id="numProbReverse" min="0" max="100" value="25"></div>
+        <div class="num-wrap"><label>Repeat %</label><input type="number" id="numProbRepeat" min="0" max="100" value="15"></div>
       </div>
     </div>
-  </div>
 
-  <!-- 🎼 Pattern Memory Controls -->
+  </div><!-- end controlPanel -->
+
+  <!-- Pattern Controls -->
   <div id="patternControls">
     <div id="patternBank">
       <button class="patternSlot active" data-slot="A">A</button>
@@ -290,14 +325,15 @@
       <button class="patternSlot" data-slot="C">C</button>
       <button class="patternSlot" data-slot="D">D</button>
     </div>
-    <button id="startRecord">⏺ Record</button>
-    <button id="stopRecord" disabled>⏹ Stop Rec</button>
-    <button id="playPattern">▶️ Play Pattern</button>
-    <button id="clearPattern">🗑 Clear</button>
+    <button id="startRecord">Record</button>
+    <button id="stopRecord" disabled>Stop Rec</button>
+    <button id="playPattern">Play Pattern</button>
+    <button id="clearPattern">Clear</button>
     <span id="patternInfo">Active Pattern: A | No events recorded.</span>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
   <script src="soundfont_keyboardBase12.js"></script>
+
 </body>
 </html>
