@@ -1,80 +1,10 @@
 /* ========================================================================== *
  * soundfont_keyboardBase12.js (Refactor: single-file, module-style)
- * DROP-IN REPLACEMENT
+ * DROP-IN REPLACEMENT (with Cadence Weight sliders: raw weights)
  *
- * MAPPING GUIDE (sections + public methods)
- *
- * 1) App State (single mutable object)
- *    - state.audio: { ctx, instrument, isReady }
- *    - state.transport: { loopTimerId, loopMode, isLooping }
- *    - state.theory: { NOTES, NOTE_TO_SEMITONE, MODE_INTERVALS, lowNote, highNote }
- *    - state.rhythm: { bpm, dynamicIntensity, timingVariationMs, humanize, restProbability, durationWeights }
- *    - state.phrase: { phraseLengthBeats, phraseBeats, phrasePendingEnd, BAR_BEATS, beatInBar, cadenceQueue,
- *                      probContinue, probReverse, probRepeat, intervalWeights, motif memory fields... }
- *    - state.pattern: { patterns, activeSlot, isRecording, recordStartCtxTime, recordBpm, timers }
- *    - state.ui: { el, keyEls, config }
- *    - state.debug: false (optional; off by default)
- *
- * 2) DOMCache / UIBinder
- *    - DOMCache.cache()
- *    - UIBinder.init(controller)
- *    - UIBinder.buildKeyboard(controller)
- *    - UIBinder.highlightKey(note)
- *    - UIBinder.setStatus(text)
- *    - UIBinder.setLoopButtonsEnabled(isLooping)
- *    - UIBinder.updatePatternInfo()
- *
- * 3) AudioEngine
- *    - AudioEngine.init()
- *    - AudioEngine.loadInstrument()
- *    - AudioEngine.playNote(note, vel, durSec, offsetSec)
- *    - AudioEngine.playChord(notes, vel, durSec)
- *
- * 4) TheoryEngine (helpers; no DOM writes)
- *    - noteToMidi(note)
- *    - midiToNearestAllowedNote(midi, allowedNotes)
- *    - getScaleNotes(root, mode)
- *    - filterNotesInRange(notes)
- *    - pickClosestTonicMidi(allowed, root, referenceMidi)
- *    - degreeMidiNear(allowedMidis, targetPc, referenceMidi)
- *
- * 5) RhythmEngine (no timers)
- *    - durationToBeats(name)
- *    - pickWeightedDurationBeats(weights)
- *    - beatsToMs(beats, bpm)
- *    - beatsToSec(beats, bpm)
- *
- * 6) PhraseEngine (Generator; returns declarative events only)
- *    - PhraseEngine.nextEvent(state, beatsThisEvent) -> { kind, beats, note?/notes?, meta?/reason? }
- *    - PhraseEngine.resetForLoopStart(state)
- *
- * 7) PatternEngine (record + playback; playback uses timers but stoppable)
- *    - PatternEngine.startRecording(state)
- *    - PatternEngine.stopRecording(state)
- *    - PatternEngine.clearPattern(state)
- *    - PatternEngine.playPattern(state, hooks)
- *    - PatternEngine.recordEvent(state, evt)
- *    - PatternEngine.stopPlayback(state)
- *
- * 8) TransportEngine (owns loop timer)
- *    - TransportEngine.startLoop(state, onTick)
- *    - TransportEngine.stopLoop(state)
- *    - TransportEngine.restartLoop(state, onTick)
- *
- * 9) AppController (single orchestration point)
- *    - controller.init()
- *    - controller.playManualNote(note)
- *    - controller.playRandomOnce()
- *    - controller.playChordOnce()
- *    - controller.startNoteLoop()
- *    - controller.startChordLoop()
- *    - controller.stopAll()
- *    - controller.stopLoopOnly()
- *    - controller.onTick(beats, durationSec)
- *    - controller.startRecording/stopRecording/playPattern/clearPattern
- *    - controller setters for UI
- *
- * SMOKE TEST CHECKLIST is at the bottom of this file.
+ * NOTE: Cadence Weights are raw (do not need to sum to 100).
+ *       They only affect which cadence type is chosen AFTER Resolve% triggers.
+ *       Resolve% continues to control cadence frequency at phrase boundaries.
  * ========================================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -146,14 +76,12 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     phrase: {
-      // directional
       lastNoteIndex: null,
       lastDirection: 0,
       probContinue: 60,
       probReverse: 25,
       probRepeat: 15,
 
-      // phrase timing
       phraseLengthBeats: 16,
       phraseBeats: 0,
       phrasePendingEnd: false,
@@ -165,13 +93,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       cadenceQueue: [],
 
-      // interval mixer weights (defaults match HTML)
       intervalWeights: {0:15,1:30,2:30,3:20,4:0,5:10,7:8,9:4,12:2},
 
-      // motif memory
-      lastPhraseMemory: null,      // { key, mode, tonicMidi, intervals[], rhythms[] }
-      currentPhraseCapture: [],    // [{interval, beats}]
-      phraseReplayQueue: []        // [{interval, beats}]
+      // ✅ NEW: Cadence choice weights (raw; do not need to sum)
+      cadenceWeights: {
+        tonic: 20,
+        authentic: 50,
+        plagal: 20,
+        half: 10
+      },
+
+      lastPhraseMemory: null,
+      currentPhraseCapture: [],
+      phraseReplayQueue: []
     },
 
     pattern: {
@@ -257,7 +191,17 @@ document.addEventListener("DOMContentLoaded", () => {
         durEighthTriplet: $("durEighthTriplet"), valEighthTriplet: $("valEighthTriplet"),
         durSixteenth: $("durSixteenth"), valSixteenth: $("valSixteenth"),
         durDottedSixteenth: $("durDottedSixteenth"), valDottedSixteenth: $("valDottedSixteenth"),
-        durSixteenthTriplet: $("durSixteenthTriplet"), valSixteenthTriplet: $("valSixteenthTriplet")
+        durSixteenthTriplet: $("durSixteenthTriplet"), valSixteenthTriplet: $("valSixteenthTriplet"),
+
+        // ✅ NEW: cadence weight sliders + labels
+        cadTonic: $("cadTonic"),
+        cadTonicVal: $("cadTonicVal"),
+        cadAuthentic: $("cadAuthentic"),
+        cadAuthenticVal: $("cadAuthenticVal"),
+        cadPlagal: $("cadPlagal"),
+        cadPlagalVal: $("cadPlagalVal"),
+        cadHalf: $("cadHalf"),
+        cadHalfVal: $("cadHalfVal")
       };
     }
     return { cache };
@@ -379,7 +323,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       buildKeyboard(controller);
 
-      // Buttons: start disabled until audio ready (preserve UX)
+      // Buttons: start disabled until audio ready
       if (el.playRandom) el.playRandom.disabled = true;
       if (el.playChord) el.playChord.disabled = true;
       if (el.playChordLoop) el.playChordLoop.disabled = true;
@@ -388,8 +332,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setLoopButtonsEnabled(false);
       updatePatternInfo();
-
-      // --- Listeners must call controller only ---
 
       // One-shots
       if (el.playRandom) el.playRandom.addEventListener("click", () => controller.playRandomOnce());
@@ -456,7 +398,7 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("⚠️ Melody / Phrase inputs not found (skipping UI link).");
       }
 
-      // Interval mixer sliders -> state.phrase.intervalWeights (preserve original mapping)
+      // Interval mixer sliders
       const intervalIds = ["0","2","3","5","7","9"];
       intervalIds.forEach((id) => {
         const s = el["w" + id];
@@ -478,7 +420,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      // Duration sliders -> state.rhythm.durationWeights
+      // Duration sliders
       const durationMap = [
         ["whole","durWhole","valWhole"],
         ["half","durHalf","valHalf"],
@@ -503,6 +445,26 @@ document.addEventListener("DOMContentLoaded", () => {
           lbl.textContent = `${v}%`;
         });
       });
+
+      // ✅ NEW: Cadence weight sliders (raw weights)
+      function initCadenceSlider(sliderEl, labelEl, typeKey) {
+        if (!sliderEl || !labelEl) return;
+
+        // initialize UI from state
+        sliderEl.value = String(state.phrase.cadenceWeights[typeKey] ?? 0);
+        labelEl.textContent = `${sliderEl.value}%`;
+
+        sliderEl.addEventListener("input", (e) => {
+          const v = parseInt(e.target.value, 10);
+          labelEl.textContent = `${v}%`;
+          controller.setCadenceWeight(typeKey, v);
+        });
+      }
+
+      initCadenceSlider(el.cadTonic, el.cadTonicVal, "tonic");
+      initCadenceSlider(el.cadAuthentic, el.cadAuthenticVal, "authentic");
+      initCadenceSlider(el.cadPlagal, el.cadPlagalVal, "plagal");
+      initCadenceSlider(el.cadHalf, el.cadHalfVal, "half");
     }
 
     return {
@@ -519,9 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
    * 3) AudioEngine
    * ============================== */
   const AudioEngine = (() => {
-    function init() {
-      return loadInstrument();
-    }
+    function init() { return loadInstrument(); }
 
     function loadInstrument() {
       const { ctx } = state.audio;
@@ -555,7 +515,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function playChord(notes, vel = 0.7, durationSec = 1.2) {
       if (!state.audio.instrument) return null;
-
       const humanize = state.rhythm.humanize;
       const timingVariation = state.rhythm.timingVariationMs;
 
@@ -777,12 +736,19 @@ document.addEventListener("DOMContentLoaded", () => {
       return rr < 0.575 ? 1 : -1;
     }
 
-    function _chooseCadenceType() {
-      const r = Math.random() * 100;
-      if (r < 20) return "tonic";
-      if (r < 70) return "authentic";
-      if (r < 90) return "plagal";
-      return "half";
+    // ✅ NEW: weighted cadence type choice from raw weights
+    function _chooseCadenceTypeByWeights(weights) {
+      const entries = Object.entries(weights || {}).filter(([, w]) => (w | 0) > 0);
+      const total = entries.reduce((s, [, w]) => s + (w | 0), 0);
+      if (total <= 0) return "tonic";
+
+      let r = Math.random() * total;
+      for (const [name, wRaw] of entries) {
+        const w = (wRaw | 0);
+        r -= w;
+        if (r <= 0) return name;
+      }
+      return entries[entries.length - 1][0];
     }
 
     function _scheduleCadence(s, allowed, root) {
@@ -799,7 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dominantPc = (tonicPc + 7) % 12;
       const subdominantPc = (tonicPc + 5) % 12;
 
-      const type = _chooseCadenceType();
+      const type = _chooseCadenceTypeByWeights(s.phrase.cadenceWeights);
       s.phrase.cadenceQueue = [];
 
       if (type === "tonic") {
@@ -820,6 +786,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
+      // authentic
       const vMidi = TheoryEngine.degreeMidiNear(allowedMidis, dominantPc, refMidi) ?? tonicMidi;
       s.phrase.cadenceQueue.push({ midi: vMidi, label: "V" });
       s.phrase.cadenceQueue.push({ midi: tonicMidi, label: "I" });
@@ -868,7 +835,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function _nextNoteEvent(s, allowed, root, beatsThisEvent) {
       const isDownbeat = (s.phrase.beatInBar === 0);
 
-      // Cadence queue has priority
       if (s.phrase.cadenceQueue.length) {
         const step = s.phrase.cadenceQueue.shift();
         const note = TheoryEngine.midiToNearestAllowedNote(step.midi, allowed);
@@ -885,7 +851,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return { kind: "rest", beats: beatsThisEvent, reason: "cadence-no-note" };
       }
 
-      // Phrase end only on downbeat
       if (s.phrase.phrasePendingEnd && isDownbeat) {
         const doResolve = (Math.random() * 100 < s.phrase.phraseResolveProb);
         if (doResolve) {
@@ -902,7 +867,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         _commitPhraseMemory(s, allowed, root);
 
-        // reset phrase counters for the new phrase
         s.phrase.phrasePendingEnd = false;
         s.phrase.phraseBeats = 0;
         s.phrase.currentPhraseCapture = [];
@@ -915,13 +879,11 @@ document.addEventListener("DOMContentLoaded", () => {
           return { kind: "rest", beats: beatsThisEvent, reason: didReplay ? "phrase-rest-next-replay" : "phrase-rest" };
         }
 
-        // If cadence scheduled, start immediately on this downbeat
         if (s.phrase.cadenceQueue.length) {
           return _nextNoteEvent(s, allowed, root, beatsThisEvent);
         }
       }
 
-      // Phrase replay (motif)
       if (s.phrase.phraseReplayQueue.length) {
         const step = s.phrase.phraseReplayQueue.shift();
         const refMidi =
@@ -945,7 +907,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return { kind: "rest", beats: beatsThisEvent, reason: "phrase-replay-no-note" };
       }
 
-      // Global rest (inside phrase), but don't block phrase end downbeats
       if (!s.phrase.phrasePendingEnd && _shouldGlobalRest(s)) {
         s.phrase.phraseBeats += beatsThisEvent;
         if (s.phrase.phraseBeats >= s.phrase.phraseLengthBeats) s.phrase.phrasePendingEnd = true;
@@ -953,7 +914,6 @@ document.addEventListener("DOMContentLoaded", () => {
         return { kind: "rest", beats: beatsThisEvent, reason: "global" };
       }
 
-      // Normal note generation
       let nextNote = null;
 
       if (s.phrase.lastNoteIndex === null) {
@@ -1075,7 +1035,6 @@ document.addEventListener("DOMContentLoaded", () => {
       stopPlayback(s);
 
       const el = s.ui.el;
-      // preserve original odd behavior (Play Pattern stays enabled)
       if (el.playPattern) el.playPattern.disabled = false;
       if (el.patternInfo) el.patternInfo.textContent = `Active Pattern: ${s.pattern.activeSlot} | Cleared.`;
       UIBinder.setStatus(`🗑 Cleared Pattern ${s.pattern.activeSlot}.`);
@@ -1088,9 +1047,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Controller policy: pattern playback takes over; stop loop
       hooks.stopLoopOnly();
-
       stopPlayback(s);
 
       const scale = s.pattern.recordBpm > 0 ? (s.pattern.recordBpm / s.rhythm.bpm) : 1;
@@ -1120,7 +1077,7 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
   /* ==============================
-   * 8) TransportEngine (loop timer owner)
+   * 8) TransportEngine
    * ============================== */
   const TransportEngine = (() => {
     function _scheduleNext(s, onTick) {
@@ -1129,7 +1086,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const durationSec = RhythmEngine.beatsToSec(beatsThisEvent, s.rhythm.bpm) * 0.92;
 
       onTick(beatsThisEvent, durationSec);
-
       s.transport.loopTimerId = setTimeout(() => _scheduleNext(s, onTick), delayMs);
     }
 
@@ -1161,7 +1117,7 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
   /* ==============================
-   * 9) AppController (single orchestrator)
+   * 9) AppController
    * ============================== */
   const AppController = (() => {
     const debugLog = (...args) => { if (state.debug) console.log(...args); };
@@ -1221,7 +1177,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function onTick(beatsThisEvent, durationSec) {
-      // duration selected exactly once per tick (TransportEngine), passed here
       const evt = PhraseEngine.nextEvent(state, beatsThisEvent);
       debugLog("tick", { beatsThisEvent, durationSec, evt });
       if (evt.kind === "note" || evt.kind === "chord") _playEvent(evt, durationSec);
@@ -1234,13 +1189,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function stopAll() {
-      // stop authority: loop + pattern playback timers
       TransportEngine.stopLoop(state);
       PatternEngine.stopPlayback(state);
 
       UIBinder.setLoopButtonsEnabled(false);
 
-      // restore one-shots availability
       const el = state.ui.el;
       if (el.playRandom) el.playRandom.disabled = false;
       if (el.playChord) el.playChord.disabled = false;
@@ -1335,7 +1288,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function setActivePatternSlot(slot) {
-      // stop recording + playback when switching slot (preserve safety)
       PatternEngine.stopRecording(state);
       PatternEngine.stopPlayback(state);
 
@@ -1349,16 +1301,13 @@ document.addEventListener("DOMContentLoaded", () => {
       state.pattern.activeSlot = slot;
       UIBinder.updatePatternInfo();
 
-      // update playPattern enabled state like original: enable if any events exist
       const len = state.pattern.patterns[slot].length;
       if (state.ui.el.playPattern) state.ui.el.playPattern.disabled = (len === 0);
     }
 
-    // Setters (UI -> controller only)
+    // Setters
     function setBpm(bpm) {
       state.rhythm.bpm = bpm;
-
-      // Correctness requirement: loop timing stable and restart on BPM change
       if (state.transport.loopTimerId) {
         const mode = state.transport.loopMode;
         TransportEngine.stopLoop(state);
@@ -1382,6 +1331,12 @@ document.addEventListener("DOMContentLoaded", () => {
     function setProbReverse(v) { state.phrase.probReverse = v; }
     function setProbRepeat(v) { state.phrase.probRepeat = v; }
 
+    // ✅ NEW: cadence weight setter (raw weight)
+    function setCadenceWeight(typeKey, weight) {
+      if (!state.phrase.cadenceWeights) state.phrase.cadenceWeights = {};
+      state.phrase.cadenceWeights[typeKey] = Math.max(0, Math.min(100, weight | 0));
+    }
+
     function init() {
       DOMCache.cache();
       UIBinder.init(publicApi);
@@ -1389,14 +1344,10 @@ document.addEventListener("DOMContentLoaded", () => {
       AudioEngine.init()
         .then(() => {
           UIBinder.setStatus("✅ Piano SoundFont loaded!");
-
-          // enable buttons
           const el = state.ui.el;
           if (el.playRandom) el.playRandom.disabled = false;
           if (el.playChord) el.playChord.disabled = false;
           if (el.playChordLoop) el.playChordLoop.disabled = false;
-
-          // allow play pattern button even if empty (but original UX is ambiguous; keep enabled now that loaded)
           if (el.playPattern) el.playPattern.disabled = false;
         })
         .catch((err) => {
@@ -1408,25 +1359,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const publicApi = {
       init,
 
-      // manual
       playManualNote,
       playRandomOnce,
       playChordOnce,
 
-      // loop
       startNoteLoop,
       startChordLoop,
       stopAll,
       stopLoopOnly,
 
-      // pattern
       startRecording,
       stopRecording,
       playPattern,
       clearPattern,
       setActivePatternSlot,
 
-      // setters
       setBpm,
       setDynamicIntensity,
       setTimingVariationMs,
@@ -1440,7 +1387,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setPhraseResolveProb,
       setProbContinue,
       setProbReverse,
-      setProbRepeat
+      setProbRepeat,
+
+      // ✅ NEW
+      setCadenceWeight
     };
 
     return publicApi;
@@ -1448,89 +1398,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Boot
   AppController.init();
-
-  /* ====================================================================== *
-   * SMOKE TEST CHECKLIST (run in this order)
-   *
-   * A) Boot / Load
-   * - Load the page fresh.
-   * - Expect: status shows SoundFont loaded (or similar ready message).
-   * - Expect: Play buttons enabled.
-   * - Open DevTools console.
-   * - Expect: no errors on load.
-   *
-   * B) Basic playback (manual triggers)
-   * - Click a few white/black keys.
-   *   Expect: each key plays a note and highlights.
-   * - Click Play Random (single shot).
-   *   Expect: one note plays (or rest if global rest is allowed), and status updates.
-   * - Click Play Chord (single shot).
-   *   Expect: chord sounds, status updates.
-   *
-   * C) Loop timing and stop authority
-   * - Click Note Loop.
-   *   Expect: notes/rests begin at steady tempo.
-   * - Click Stop.
-   *   Expect: loop stops immediately (within one tick); no continuing notes scheduled.
-   * - Click Note Loop again.
-   *   Expect: loop restarts cleanly (no double-timer “speed up” effect).
-   *
-   * D) BPM change / restart behavior
-   * - Start loop, then change BPM slider while looping.
-   *   Expect: timing changes promptly and smoothly (restart ok).
-   *   Expect: no console errors.
-   * - Stop.
-   *   Expect: stop still works (no stuck timers).
-   *
-   * E) Duration coherence (no double selection)
-   * - Set 100% quarter, 0% others. Start note loop.
-   *   Expect: evenly spaced quarter-note timing.
-   * - Switch to 100% eighth (or sixteenth). Start loop.
-   *   Expect: clearly faster tick rate.
-   * - Confirm: note duration feels tied to tick length (not mismatched overlap).
-   *
-   * F) Phrase boundary integrity
-   * - Set Phrase Length to 4 beats. Start loop.
-   *   Expect: phrase endings align to downbeat (barline), not mid-bar.
-   *   Expect: resolve/cadence events happen on downbeat boundary.
-   *
-   * G) Rest logic separation
-   * - Set global rest high (~70%), phrase rest high (~70%).
-   *   Expect: global rests inside phrases; phrase rests at boundaries.
-   * - Set global rest 0%, phrase rest high.
-   *   Expect: phrases play normally but pause between phrases.
-   *
-   * H) Phrase repetition (memory)
-   * - Set Repeat% high (~80%).
-   *   Expect: audible repetition of prior phrase contour/motif.
-   * - Stop, restart.
-   *   Expect: no crash; repetition remains consistent.
-   *
-   * I) Pattern recording / playback
-   * - Click Record, play a few notes (keyboard or Play One Note), then Stop Rec.
-   *   Expect: pattern info event count > 0.
-   * - Click Play Pattern.
-   *   Expect: recorded sequence plays back with roughly correct timing.
-   * - Click Stop.
-   *   Expect: stops pattern playback too (no runaway timers).
-   * - Click Clear.
-   *   Expect: slot clears.
-   *
-   * J) Mode switching safety
-   * - While a pattern is playing, start a note loop.
-   *   Expect: pattern playback stops cleanly and loop takes over.
-   * - Start chord loop, stop, start note loop.
-   *   Expect: no timer stacking, no “double speed”.
-   *
-   * K) Final stability check
-   * - Start loop → change BPM → stop → record pattern → play → stop → start loop again.
-   *   Expect: all works, no console errors.
-   *
-   * If this fails, where to look
-   * - Double speed: two timers active; ensure TransportEngine.stopLoop clears loopTimerId before restart.
-   * - Pattern won’t stop: PatternEngine.stopPlayback not called by controller stopAll().
-   * - UI sliders inert: listeners must call controller setters (only).
-   * - Notes play but no record: controller must call PatternEngine.recordEvent on actual playback.
-   * - Phrase ends mid-bar: phrase end logic must only trigger on downbeat.
-   * ====================================================================== */
 });
