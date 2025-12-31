@@ -79,7 +79,6 @@
     min-width:250px;
   }
 
-
   /* ===== REDUCED LABEL/SLIDER GRID ===== */
   #durationMixer, #intervalMixer, #tempoDynamics {
     display:grid;
@@ -282,6 +281,31 @@
         <div class="num-wrap"><label>Continue %</label><input type="number" id="numProbContinue" min="0" max="100" value="60"></div>
         <div class="num-wrap"><label>Reverse %</label><input type="number" id="numProbReverse" min="0" max="100" value="25"></div>
         <div class="num-wrap"><label>Repeat %</label><input type="number" id="numProbRepeat" min="0" max="100" value="15"></div>
+      </div>
+
+      <!-- ✅ NEW: Cadence Weight Mixer (raw weights; don't need to sum to 100) -->
+      <div style="width:100%; margin-top:12px; padding-top:10px; border-top:1px solid #444;">
+        <div style="font-size:0.95em; color:#ffe680; text-align:center; margin-bottom:8px;">
+          Cadence Weights (raw)
+        </div>
+        <div id="cadenceMixer"
+             style="display:grid; grid-template-columns:140px 110px 55px; row-gap:6px; column-gap:6px; align-items:center; justify-content:center; font-size:0.85em;">
+          <label>Tonic (I)</label>
+          <input type="range" id="cadTonic" min="0" max="100" value="20">
+          <span id="cadTonicVal">20%</span>
+
+          <label>Authentic (V→I)</label>
+          <input type="range" id="cadAuthentic" min="0" max="100" value="50">
+          <span id="cadAuthenticVal">50%</span>
+
+          <label>Plagal (IV→I)</label>
+          <input type="range" id="cadPlagal" min="0" max="100" value="20">
+          <span id="cadPlagalVal">20%</span>
+
+          <label>Half (V)</label>
+          <input type="range" id="cadHalf" min="0" max="100" value="10">
+          <span id="cadHalfVal">10%</span>
+        </div>
       </div>
     </div>
 
