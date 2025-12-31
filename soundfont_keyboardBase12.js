@@ -201,7 +201,12 @@ document.addEventListener("DOMContentLoaded", () => {
         cadPlagal: $("cadPlagal"),
         cadPlagalVal: $("cadPlagalVal"),
         cadHalf: $("cadHalf"),
-        cadHalfVal: $("cadHalfVal")
+        cadHalfVal: $("cadHalfVal"),
+        // Presets (Patch 1: Export only; Patch 2 adds Import)
+        exportPreset: $("exportPreset"),
+        presetText: $("presetText"),
+        importPreset: $("importPreset"),
+        presetFile: $("presetFile")     
       };
     }
     return { cache };
