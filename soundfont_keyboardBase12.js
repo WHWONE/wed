@@ -9,18 +9,45 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastNoteIndex = null;
 
 // ===== Melodic Direction System =====
-let lastDirection = 0; // -1 = down, 0 = same, +1 = up
+// -1 = down, 0 = same, +1 = up
+let lastDirection = 0;
 
-// Probability weights for directional behavior
-let probContinue = 60; // 60% chance to keep same direction
-let probReverse  = 25; // 25% chance to flip direction
-let probRepeat   = 15; // 15% chance to repeat same note
-// ===== Phrase & Cadence System =====
-let phraseLength = 16;     // number of notes per phrase (roughly one bar = 4 notes)
-let phraseCounter = 0;     // counts how many notes played in current phrase
-let phraseRestProb = 30;   // % chance of a short rest after each phrase
-let phraseResolveProb = 70; // % chance to resolve to tonic at phrase end
+// These are the UI knobs under Melody / Phrase.
+// FIX: Continue % is now actually used in direction choice.
+let probContinue = 60; // keep same direction
+let probReverse  = 25; // flip direction
+let phraseRepeatProb = 15; // FIX: Repeat % becomes phrase-level repetition (uses phrase memory)
 
+// NOTE: Note-level repeats are already handled musically by intervalWeights (Same Note slider).
+// We no longer use the "Repeat %" knob for single-note repetition.
+
+// ===== Phrase Timing / Memory / Cadence System =====
+// FIX: Phrase length is in BEATS (not note-count).
+let phraseLengthBeats = 16;      // UI "Phrase Length" interpreted as beats
+let phraseRestProb = 20;         // UI "Phrase Rest %": only applied at phrase boundary (distinct from global rest)
+let phraseResolveProb = 60;      // UI "Resolve %": cadence decision at phrase end
+
+// FIX: Phrase endings respect barlines/downbeats (assume 4/4 for now).
+const BAR_BEATS = 4;
+
+// Beat clock for the looping generator (relative, not AudioContext time).
+let beatClock = 0;               // current position in beats since loop start
+let phraseStartBeat = 0;         // beat position where current phrase started
+let phraseEndBeat = 0;           // beat position where phrase must end (snapped to barline)
+
+// Phrase memory for repetition (musical repetition of phrases).
+// Each event stores an absolute MIDI pitch and duration in beats.
+let lastPhraseEvents = [];       // previous phrase (for repetition)
+let currentPhraseEvents = [];    // being recorded this phrase
+
+// When repeating a phrase, we play from this queue instead of generating new notes.
+let phrasePlaybackQueue = [];    // array of { midi, beats }
+let isPlayingPhraseRepeat = false;
+
+// Helper: snap beat position UP to the next barline.
+function snapUpToBarline(beatPos) {
+  return Math.ceil(beatPos / BAR_BEATS) * BAR_BEATS;
+}
 
   // ===== Pattern Bank State =====
   const patterns = { A: [], B: [], C: [], D: [] };
