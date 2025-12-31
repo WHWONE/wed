@@ -513,52 +513,38 @@ function pickNextDirection() {
   }
 
 
-  function playRandomNoteInKey() {
-    const root = keySelect.value;
-    let allowed = filterNotesInRange(getScaleNotes(root));
-    if (!allowed.length) return;
-    if (shouldRest()) {
-      status.textContent = "🤫 Rest (no note played)";
-      return;
-    }
-    let next;
-if (lastNoteIndex === null) {
-  // first note: choose random start point
-  next = allowed[Math.floor(Math.random() * allowed.length)];
-  lastNoteIndex = allowed.indexOf(next);
-  lastDirection = 1; // start moving upward
-} else {
-  const interval = weightedRandomInterval(intervalWeights);
-  const dir = pickNextDirection();
+function playRandomNoteInKey() {
+  if (!piano) return 1;
 
-  let newIndex = lastNoteIndex + dir * Math.round(interval / 2);
-  newIndex = Math.max(0, Math.min(newIndex, allowed.length - 1));
+  const evt = generateNextMelodyEvent();
 
-  next = allowed[newIndex];
-  lastDirection = dir;
-  lastNoteIndex = newIndex;
-  // ===== Phrase Tracking =====
-  phraseCounter++;
+  // Advance beat clock by event duration
+  beatClock += evt.beats;
 
-  // If phrase is ending, decide whether to cadence or rest
-  if (phraseCounter >= phraseLength) {
-    phraseCounter = 0; // reset phrase counter
-
-    // Possibly cadence to tonic
-    if (Math.random() * 100 < phraseResolveProb) {
-      next = resolveToTonic(allowed, root);
-      lastNoteIndex = allowed.indexOf(next);
-      lastDirection = 0;
-      status.textContent = `🎵 Cadence → ${next}`;
-    }
-
-    // Possibly insert a rest
-    if (Math.random() * 100 < phraseRestProb) {
-      status.textContent = "🤫 Phrase rest";
-      return; // skip playing note
-    }
+  if (evt.kind === "rest" || !evt.note) {
+    status.textContent = evt.statusText || "🤫 Rest";
+    return evt.beats;
   }
+
+  const gain = 0.7 + (Math.random() * 0.3 - 0.15);
+  piano.play(evt.note, audioCtx.currentTime, {
+    duration: 1.2,
+    gain
+  });
+
+  highlightKey(evt.note);
+
+  recordEvent({
+    type: "note",
+    note: evt.note,
+    velocity: gain,
+    duration: 1.2
+  });
+
+  status.textContent = evt.statusText || `🎵 Note: ${evt.note}`;
+  return evt.beats;
 }
+
 
     const gain = 0.7 + (Math.random() * 0.3 - 0.15);
     piano.play(next, audioCtx.currentTime, { duration: 1.2, gain });
