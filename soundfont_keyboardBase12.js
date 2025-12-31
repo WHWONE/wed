@@ -470,6 +470,9 @@ document.addEventListener("DOMContentLoaded", () => {
       initCadenceSlider(el.cadAuthentic, el.cadAuthenticVal, "authentic");
       initCadenceSlider(el.cadPlagal, el.cadPlagalVal, "plagal");
       initCadenceSlider(el.cadHalf, el.cadHalfVal, "half");
+
+      // Presets (Patch 1: Export only)
+      if (el.exportPreset) el.exportPreset.addEventListener("click", () => controller.exportPreset());      
     }
 
     return {
