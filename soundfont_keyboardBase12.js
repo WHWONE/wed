@@ -1130,6 +1130,96 @@ document.addEventListener("DOMContentLoaded", () => {
   const AppController = (() => {
     const debugLog = (...args) => { if (state.debug) console.log(...args); };
 
+     /* ==============================
+      * Preset Serialization (Patch 1: Export)
+      * - Save only safe state fields (no audio ctx, no instruments, no timers).
+      * - UI → controller only: UI triggers exportPreset(); controller handles.
+      * ============================== */
+     function _deepCloneJsonSafe(obj) {
+       return JSON.parse(JSON.stringify(obj));
+     }
+ 
+     function _getSafePresetSnapshot() {
+       const el = state.ui.el;
+       const nowIso = new Date().toISOString();
+ 
+       return {
+         presetVersion: 1,
+         createdAt: nowIso,
+ 
+         // UI-driven theory selection
+         ui: {
+           key: el.keySelect ? String(el.keySelect.value) : "C",
+           mode: el.modeSelect ? String(el.modeSelect.value) : "ionian"
+         },
+ 
+         theory: {
+           lowNote: String(state.theory.lowNote),
+           highNote: String(state.theory.highNote)
+         },
+ 
+         rhythm: {
+           bpm: state.rhythm.bpm,
+           dynamicIntensity: state.rhythm.dynamicIntensity,
+           timingVariationMs: state.rhythm.timingVariationMs,
+           humanize: !!state.rhythm.humanize,
+           restProbability: state.rhythm.restProbability,
+           durationWeights: _deepCloneJsonSafe(state.rhythm.durationWeights)
+         },
+ 
+         phrase: {
+           probContinue: state.phrase.probContinue,
+           probReverse: state.phrase.probReverse,
+           probRepeat: state.phrase.probRepeat,
+           phraseLengthBeats: state.phrase.phraseLengthBeats,
+           phraseRestProb: state.phrase.phraseRestProb,
+           phraseResolveProb: state.phrase.phraseResolveProb,
+           intervalWeights: _deepCloneJsonSafe(state.phrase.intervalWeights),
+           cadenceWeights: _deepCloneJsonSafe(state.phrase.cadenceWeights)
+         },
+ 
+         pattern: {
+           activeSlot: String(state.pattern.activeSlot),
+           recordBpm: state.pattern.recordBpm,
+           patterns: _deepCloneJsonSafe(state.pattern.patterns)
+         }
+       };
+     }
+ 
+     async function exportPreset() {
+       const el = state.ui.el;
+       const preset = _getSafePresetSnapshot();
+       const json = JSON.stringify(preset, null, 2);
+ 
+       if (el.presetText) el.presetText.value = json;
+ 
+       // Best-effort clipboard (safe/no-op if blocked)
+       try {
+         if (navigator.clipboard && navigator.clipboard.writeText) {
+           await navigator.clipboard.writeText(json);
+         }
+       } catch (_) {
+         // ignore
+       }
+ 
+       // Best-effort download
+       try {
+         const blob = new Blob([json], { type: "application/json" });
+         const url = URL.createObjectURL(blob);
+         const a = document.createElement("a");
+         a.href = url;
+         a.download = `soundfont_preset_${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+         document.body.appendChild(a);
+         a.click();
+         a.remove();
+         URL.revokeObjectURL(url);
+       } catch (_) {
+         // ignore
+       }
+ 
+       UIBinder.setStatus("✅ Preset exported (JSON in text box).");
+     }    
+
     function _ensureAudioReady() {
       if (!state.audio.isReady) {
         UIBinder.setStatus("⏳ Loading SoundFont…");
