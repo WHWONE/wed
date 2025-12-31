@@ -9,45 +9,18 @@ document.addEventListener("DOMContentLoaded", () => {
   let lastNoteIndex = null;
 
 // ===== Melodic Direction System =====
-// -1 = down, 0 = same, +1 = up
-let lastDirection = 0;
+let lastDirection = 0; // -1 = down, 0 = same, +1 = up
 
-// These are the UI knobs under Melody / Phrase.
-// FIX: Continue % is now actually used in direction choice.
-let probContinue = 60; // keep same direction
-let probReverse  = 25; // flip direction
-let phraseRepeatProb = 15; // FIX: Repeat % becomes phrase-level repetition (uses phrase memory)
+// Probability weights for directional behavior
+let probContinue = 60; // 60% chance to keep same direction
+let probReverse  = 25; // 25% chance to flip direction
+let probRepeat   = 15; // 15% chance to repeat same note
+// ===== Phrase & Cadence System =====
+let phraseLength = 16;     // number of notes per phrase (roughly one bar = 4 notes)
+let phraseCounter = 0;     // counts how many notes played in current phrase
+let phraseRestProb = 30;   // % chance of a short rest after each phrase
+let phraseResolveProb = 70; // % chance to resolve to tonic at phrase end
 
-// NOTE: Note-level repeats are already handled musically by intervalWeights (Same Note slider).
-// We no longer use the "Repeat %" knob for single-note repetition.
-
-// ===== Phrase Timing / Memory / Cadence System =====
-// FIX: Phrase length is in BEATS (not note-count).
-let phraseLengthBeats = 16;      // UI "Phrase Length" interpreted as beats
-let phraseRestProb = 20;         // UI "Phrase Rest %": only applied at phrase boundary (distinct from global rest)
-let phraseResolveProb = 60;      // UI "Resolve %": cadence decision at phrase end
-
-// FIX: Phrase endings respect barlines/downbeats (assume 4/4 for now).
-const BAR_BEATS = 4;
-
-// Beat clock for the looping generator (relative, not AudioContext time).
-let beatClock = 0;               // current position in beats since loop start
-let phraseStartBeat = 0;         // beat position where current phrase started
-let phraseEndBeat = 0;           // beat position where phrase must end (snapped to barline)
-
-// Phrase memory for repetition (musical repetition of phrases).
-// Each event stores an absolute MIDI pitch and duration in beats.
-let lastPhraseEvents = [];       // previous phrase (for repetition)
-let currentPhraseEvents = [];    // being recorded this phrase
-
-// When repeating a phrase, we play from this queue instead of generating new notes.
-let phrasePlaybackQueue = [];    // array of { midi, beats }
-let isPlayingPhraseRepeat = false;
-
-// Helper: snap beat position UP to the next barline.
-function snapUpToBarline(beatPos) {
-  return Math.ceil(beatPos / BAR_BEATS) * BAR_BEATS;
-}
 
   // ===== Pattern Bank State =====
   const patterns = { A: [], B: [], C: [], D: [] };
@@ -480,27 +453,14 @@ function durationToBeats(name) {
   });
 
   // ===== Random Note Logic =====
-
-  
   // ===== Melodic Direction Picker =====
-function pickNextDirection() {
-  // If we have no direction yet, choose one deterministically
-  const baseDir = lastDirection || 1;
+  function pickNextDirection() {
+    const r = Math.random() * 100;
 
-  const c = Math.max(0, probContinue);
-  const r = Math.max(0, probReverse);
-  const other = 100;
-
-  const total = c + r + other;
-  const roll = Math.random() * total;
-
-  if (roll < c) return baseDir;        // continue
-  if (roll < c + r) return -baseDir;   // reverse
-
-  // fresh direction
-  return Math.random() < 0.5 ? 1 : -1;
-}
-
+    if (r < probRepeat) return 0; // stay on the same note
+    if (r < probRepeat + probReverse) return -lastDirection || -1; // reverse
+    return lastDirection || 1; // continue same direction (default upward)
+  }
 
   // ===== Phrase Resolution Picker =====
   function resolveToTonic(allowed, root) {
@@ -515,41 +475,52 @@ function pickNextDirection() {
   }
 
 
-function playRandomNoteInKey() {
-  if (!piano) return 1;
+  function playRandomNoteInKey() {
+    const root = keySelect.value;
+    let allowed = filterNotesInRange(getScaleNotes(root));
+    if (!allowed.length) return;
+    if (shouldRest()) {
+      status.textContent = "🤫 Rest (no note played)";
+      return;
+    }
+    let next;
+if (lastNoteIndex === null) {
+  // first note: choose random start point
+  next = allowed[Math.floor(Math.random() * allowed.length)];
+  lastNoteIndex = allowed.indexOf(next);
+  lastDirection = 1; // start moving upward
+} else {
+  const interval = weightedRandomInterval(intervalWeights);
+  const dir = pickNextDirection();
 
-  const evt = generateNextMelodyEvent();
+  let newIndex = lastNoteIndex + dir * Math.round(interval / 2);
+  newIndex = Math.max(0, Math.min(newIndex, allowed.length - 1));
 
-  // Advance beat clock by event duration
-  beatClock += evt.beats;
+  next = allowed[newIndex];
+  lastDirection = dir;
+  lastNoteIndex = newIndex;
+  // ===== Phrase Tracking =====
+  phraseCounter++;
 
-  if (evt.kind === "rest" || !evt.note) {
-    status.textContent = evt.statusText || "🤫 Rest";
-    return evt.beats;
+  // If phrase is ending, decide whether to cadence or rest
+  if (phraseCounter >= phraseLength) {
+    phraseCounter = 0; // reset phrase counter
+
+    // Possibly cadence to tonic
+    if (Math.random() * 100 < phraseResolveProb) {
+      next = resolveToTonic(allowed, root);
+      lastNoteIndex = allowed.indexOf(next);
+      lastDirection = 0;
+      status.textContent = `🎵 Cadence → ${next}`;
+    }
+
+    // Possibly insert a rest
+    if (Math.random() * 100 < phraseRestProb) {
+      status.textContent = "🤫 Phrase rest";
+      return; // skip playing note
+    }
   }
-
-  const gain = 0.7 + (Math.random() * 0.3 - 0.15);
-  piano.play(evt.note, audioCtx.currentTime, {
-    duration: 1.2,
-    gain
-  });
-
-  highlightKey(evt.note);
-
-  recordEvent({
-    type: "note",
-    note: evt.note,
-    velocity: gain,
-    duration: 1.2
-  });
-
-  status.textContent = evt.statusText || `🎵 Note: ${evt.note}`;
-  return evt.beats;
-  }
- }
 }
-                          
-
 
     const gain = 0.7 + (Math.random() * 0.3 - 0.15);
     piano.play(next, audioCtx.currentTime, { duration: 1.2, gain });
