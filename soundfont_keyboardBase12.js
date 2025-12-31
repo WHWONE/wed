@@ -480,6 +480,8 @@ function durationToBeats(name) {
   });
 
   // ===== Random Note Logic =====
+
+  
   // ===== Melodic Direction Picker =====
 function pickNextDirection() {
   // If we have no direction yet, choose one deterministically
@@ -543,7 +545,10 @@ function playRandomNoteInKey() {
 
   status.textContent = evt.statusText || `🎵 Note: ${evt.note}`;
   return evt.beats;
+  }
+ }
 }
+                          
 
 
     const gain = 0.7 + (Math.random() * 0.3 - 0.15);
