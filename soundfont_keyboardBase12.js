@@ -1487,9 +1487,12 @@ document.addEventListener("DOMContentLoaded", () => {
       setProbReverse,
       setProbRepeat,
 
-      // ✅ NEW
-      setCadenceWeight
-    };
+  // ✅ NEW
+  setCadenceWeight,
+
+  // Presets
+  exportPreset
+};
 
     return publicApi;
   })();
