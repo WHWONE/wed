@@ -481,13 +481,24 @@ function durationToBeats(name) {
 
   // ===== Random Note Logic =====
   // ===== Melodic Direction Picker =====
-  function pickNextDirection() {
-    const r = Math.random() * 100;
+function pickNextDirection() {
+  // If we have no direction yet, choose one deterministically
+  const baseDir = lastDirection || 1;
 
-    if (r < probRepeat) return 0; // stay on the same note
-    if (r < probRepeat + probReverse) return -lastDirection || -1; // reverse
-    return lastDirection || 1; // continue same direction (default upward)
-  }
+  const c = Math.max(0, probContinue);
+  const r = Math.max(0, probReverse);
+  const other = 100;
+
+  const total = c + r + other;
+  const roll = Math.random() * total;
+
+  if (roll < c) return baseDir;        // continue
+  if (roll < c + r) return -baseDir;   // reverse
+
+  // fresh direction
+  return Math.random() < 0.5 ? 1 : -1;
+}
+
 
   // ===== Phrase Resolution Picker =====
   function resolveToTonic(allowed, root) {
