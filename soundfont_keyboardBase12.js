@@ -1228,6 +1228,214 @@ if (el.presetFile) el.presetFile.addEventListener("change", (e) => {
        UIBinder.setStatus("✅ Preset exported (JSON in text box).");
      }    
 
+function _isObject(x) { return x && typeof x === "object" && !Array.isArray(x); }
+function _num(x, fallback) { const n = Number(x); return Number.isFinite(n) ? n : fallback; }
+function _int(x, fallback) { const n = parseInt(x, 10); return Number.isFinite(n) ? n : fallback; }
+function _clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n)); }
+
+function _applyPresetObject(preset) {
+  const el = state.ui.el;
+
+  // Stop playback to avoid weirdness while changing many params
+  stopAll();
+
+  // ---- UI selections (key/mode) ----
+  if (_isObject(preset.ui)) {
+    if (el.keySelect && typeof preset.ui.key === "string") el.keySelect.value = preset.ui.key;
+    if (el.modeSelect && typeof preset.ui.mode === "string") el.modeSelect.value = preset.ui.mode;
+  }
+
+  // ---- Theory range ----
+  if (_isObject(preset.theory)) {
+    if (typeof preset.theory.lowNote === "string") state.theory.lowNote = preset.theory.lowNote;
+    if (typeof preset.theory.highNote === "string") state.theory.highNote = preset.theory.highNote;
+
+    if (el.lowNoteSelect) el.lowNoteSelect.value = state.theory.lowNote;
+    if (el.highNoteSelect) el.highNoteSelect.value = state.theory.highNote;
+  }
+
+  // ---- Rhythm ----
+  if (_isObject(preset.rhythm)) {
+    state.rhythm.bpm = _clamp(_int(preset.rhythm.bpm, state.rhythm.bpm), 40, 240);
+    state.rhythm.dynamicIntensity = _clamp(_num(preset.rhythm.dynamicIntensity, state.rhythm.dynamicIntensity), 0.3, 1.0);
+    state.rhythm.timingVariationMs = _clamp(_int(preset.rhythm.timingVariationMs, state.rhythm.timingVariationMs), 0, 200);
+    state.rhythm.humanize = !!preset.rhythm.humanize;
+    state.rhythm.restProbability = _clamp(_int(preset.rhythm.restProbability, state.rhythm.restProbability), 0, 100);
+
+    if (_isObject(preset.rhythm.durationWeights)) {
+      Object.keys(state.rhythm.durationWeights).forEach((k) => {
+        if (preset.rhythm.durationWeights[k] !== undefined) {
+          state.rhythm.durationWeights[k] = _clamp(_int(preset.rhythm.durationWeights[k], state.rhythm.durationWeights[k]), 0, 100);
+        }
+      });
+    }
+  }
+
+  // ---- Phrase ----
+  if (_isObject(preset.phrase)) {
+    state.phrase.probContinue = _clamp(_int(preset.phrase.probContinue, state.phrase.probContinue), 0, 100);
+    state.phrase.probReverse = _clamp(_int(preset.phrase.probReverse, state.phrase.probReverse), 0, 100);
+    state.phrase.probRepeat = _clamp(_int(preset.phrase.probRepeat, state.phrase.probRepeat), 0, 100);
+
+    state.phrase.phraseLengthBeats = _clamp(_num(preset.phrase.phraseLengthBeats, state.phrase.phraseLengthBeats), 4, 64);
+    state.phrase.phraseRestProb = _clamp(_int(preset.phrase.phraseRestProb, state.phrase.phraseRestProb), 0, 100);
+    state.phrase.phraseResolveProb = _clamp(_int(preset.phrase.phraseResolveProb, state.phrase.phraseResolveProb), 0, 100);
+
+    if (_isObject(preset.phrase.intervalWeights)) {
+      // intervalWeights has numeric keys; we store as object keys anyway
+      Object.keys(preset.phrase.intervalWeights).forEach((k) => {
+        state.phrase.intervalWeights[k] = _clamp(_int(preset.phrase.intervalWeights[k], state.phrase.intervalWeights[k] ?? 0), 0, 100);
+      });
+    }
+
+    if (_isObject(preset.phrase.cadenceWeights)) {
+      ["tonic","authentic","plagal","half"].forEach((k) => {
+        if (preset.phrase.cadenceWeights[k] !== undefined) {
+          state.phrase.cadenceWeights[k] = _clamp(_int(preset.phrase.cadenceWeights[k], state.phrase.cadenceWeights[k] ?? 0), 0, 100);
+        }
+      });
+    }
+  }
+
+  // ---- Pattern bank ----
+  if (_isObject(preset.pattern)) {
+    if (_isObject(preset.pattern.patterns)) {
+      // Expect {A:[],B:[],C:[],D:[]}
+      ["A","B","C","D"].forEach((slot) => {
+        if (Array.isArray(preset.pattern.patterns[slot])) {
+          state.pattern.patterns[slot] = preset.pattern.patterns[slot];
+        }
+      });
+    }
+    if (typeof preset.pattern.activeSlot === "string" && ["A","B","C","D"].includes(preset.pattern.activeSlot)) {
+      state.pattern.activeSlot = preset.pattern.activeSlot;
+    }
+    if (preset.pattern.recordBpm !== undefined) {
+      state.pattern.recordBpm = _clamp(_int(preset.pattern.recordBpm, state.pattern.recordBpm), 40, 240);
+    }
+  }
+
+  // ---- Sync UI widgets to state (sliders/labels/inputs) ----
+  // tempo
+  if (el.tempoSlider) el.tempoSlider.value = String(state.rhythm.bpm);
+  if (el.tempoValue) el.tempoValue.textContent = String(state.rhythm.bpm);
+
+  // dynamics
+  if (el.velocitySlider) el.velocitySlider.value = String(state.rhythm.dynamicIntensity);
+  if (el.velocityValue) el.velocityValue.textContent = Math.round(state.rhythm.dynamicIntensity * 100) + "%";
+
+  // timing/rest/humanize
+  if (el.timingSlider) el.timingSlider.value = String(state.rhythm.timingVariationMs);
+  if (el.timingValue) el.timingValue.textContent = `${state.rhythm.timingVariationMs} ms`;
+
+  if (el.restSlider) el.restSlider.value = String(state.rhythm.restProbability);
+  if (el.restValue) el.restValue.textContent = `${state.rhythm.restProbability}%`;
+
+  if (el.humanizeToggle) el.humanizeToggle.checked = !!state.rhythm.humanize;
+
+  // phrase numeric inputs
+  if (el.numPhraseLen) el.numPhraseLen.value = String(state.phrase.phraseLengthBeats);
+  if (el.numPhraseRest) el.numPhraseRest.value = String(state.phrase.phraseRestProb);
+  if (el.numPhraseResolve) el.numPhraseResolve.value = String(state.phrase.phraseResolveProb);
+  if (el.numProbContinue) el.numProbContinue.value = String(state.phrase.probContinue);
+  if (el.numProbReverse) el.numProbReverse.value = String(state.phrase.probReverse);
+  if (el.numProbRepeat) el.numProbRepeat.value = String(state.phrase.probRepeat);
+
+  // duration sliders + labels
+  const durUi = [
+    ["whole","durWhole","valWhole"],
+    ["half","durHalf","valHalf"],
+    ["dotted_half","durDottedHalf","valDottedHalf"],
+    ["quarter","durQuarter","valQuarter"],
+    ["dotted_quarter","durDottedQuarter","valDottedQuarter"],
+    ["quarter_triplet","durQuarterTriplet","valQuarterTriplet"],
+    ["eighth","durEighth","valEighth"],
+    ["dotted_eighth","durDottedEighth","valDottedEighth"],
+    ["eighth_triplet","durEighthTriplet","valEighthTriplet"],
+    ["sixteenth","durSixteenth","valSixteenth"],
+    ["dotted_sixteenth","durDottedSixteenth","valDottedSixteenth"],
+    ["sixteenth_triplet","durSixteenthTriplet","valSixteenthTriplet"]
+  ];
+  durUi.forEach(([k, sid, lid]) => {
+    const s = el[sid], lbl = el[lid];
+    if (!s || !lbl) return;
+    const v = state.rhythm.durationWeights[k] ?? 0;
+    s.value = String(v);
+    lbl.textContent = `${v}%`;
+  });
+
+  // interval sliders + labels (these exist for 0,2,3,5,7,9)
+  const intervalUi = [["0","w0","v0"],["2","w2","v2"],["3","w3","v3"],["5","w5","v5"],["7","w7","v7"],["9","w9","v9"]];
+  intervalUi.forEach(([k, sid, lid]) => {
+    const s = el[sid], lbl = el[lid];
+    if (!s || !lbl) return;
+    const v = state.phrase.intervalWeights[k] ?? 0;
+    s.value = String(v);
+    lbl.textContent = `${v}%`;
+  });
+
+  // cadence sliders + labels
+  const cadUi = [
+    ["tonic","cadTonic","cadTonicVal"],
+    ["authentic","cadAuthentic","cadAuthenticVal"],
+    ["plagal","cadPlagal","cadPlagalVal"],
+    ["half","cadHalf","cadHalfVal"]
+  ];
+  cadUi.forEach(([k, sid, lid]) => {
+    const s = el[sid], lbl = el[lid];
+    if (!s || !lbl) return;
+    const v = state.phrase.cadenceWeights[k] ?? 0;
+    s.value = String(v);
+    lbl.textContent = `${v}%`;
+  });
+
+  // pattern UI: update active slot highlight + info + play enablement
+  setActivePatternSlot(state.pattern.activeSlot);
+  UIBinder.updatePatternInfo();
+
+  // Finally show status
+  UIBinder.setStatus("✅ Preset imported/applied.");
+}
+
+function importPresetFromText() {
+  const el = state.ui.el;
+  const txt = el.presetText ? String(el.presetText.value || "").trim() : "";
+  if (!txt) {
+    UIBinder.setStatus("⚠️ No preset JSON found in the text box.");
+    return;
+  }
+
+  let preset;
+  try {
+    preset = JSON.parse(txt);
+  } catch (e) {
+    UIBinder.setStatus("❌ Invalid JSON (could not parse).");
+    return;
+  }
+
+  if (!_isObject(preset) || (preset.presetVersion !== 1 && preset.presetVersion !== undefined)) {
+    // Allow undefined presetVersion for older exports, but guard if it’s weird.
+    UIBinder.setStatus("❌ Not a recognized preset object (version mismatch).");
+    return;
+  }
+
+  _applyPresetObject(preset);
+}
+
+function importPresetFromFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const txt = String(reader.result || "");
+    const el = state.ui.el;
+    if (el.presetText) el.presetText.value = txt; // show what was loaded
+    importPresetFromText();
+  };
+  reader.onerror = () => UIBinder.setStatus("❌ Failed to read preset file.");
+  reader.readAsText(file);
+}
+
+    
     function _ensureAudioReady() {
       if (!state.audio.isReady) {
         UIBinder.setStatus("⏳ Loading SoundFont…");
@@ -1499,7 +1707,9 @@ if (el.presetFile) el.presetFile.addEventListener("change", (e) => {
   setCadenceWeight,
 
   // Presets
-  exportPreset
+  exportPreset,
+  importPresetFromText,
+  importPresetFromFilet
 };
 
     return publicApi;
