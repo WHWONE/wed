@@ -1706,11 +1706,11 @@ function importPresetFromFile(file) {
   // ✅ NEW
   setCadenceWeight,
 
-  // Presets
-  exportPreset,
-  importPresetFromText,
-  importPresetFromFilet
-};
+   // Presets
+   exportPreset,
+   importPresetFromText,
+   importPresetFromFile
+ };
 
     return publicApi;
   })();
