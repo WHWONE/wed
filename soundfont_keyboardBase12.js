@@ -471,8 +471,16 @@ document.addEventListener("DOMContentLoaded", () => {
       initCadenceSlider(el.cadPlagal, el.cadPlagalVal, "plagal");
       initCadenceSlider(el.cadHalf, el.cadHalfVal, "half");
 
-      // Presets (Patch 1: Export only)
-      if (el.exportPreset) el.exportPreset.addEventListener("click", () => controller.exportPreset());      
+// Presets
+if (el.exportPreset) el.exportPreset.addEventListener("click", () => controller.exportPreset());
+
+// ✅ Patch 2: Import / Apply
+if (el.importPreset) el.importPreset.addEventListener("click", () => controller.importPresetFromText());
+if (el.presetFile) el.presetFile.addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (f) controller.importPresetFromFile(f);
+  e.target.value = ""; // allow re-picking same file
+});      
     }
 
     return {
