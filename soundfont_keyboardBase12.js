@@ -1,6 +1,6 @@
 /* ========================================================================== *
  * soundfont_keyboardBase12.js (Refactor: single-file, module-style)
- * DROP-IN REPLACEMENT (with Cadence Weight sliders: raw-weights)
+ * DROP-IN REPLACEMENT (with Cadence Weight sliders: raw weights)
  *
  * NOTE: Cadence Weights are raw (do not need to sum to 100).
  *       They only affect which cadence type is chosen AFTER Resolve% triggers.
