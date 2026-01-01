@@ -206,35 +206,38 @@
       <option value="mixolydian">Mixolydian</option>
       <option value="aeolian">Aeolian (Minor)</option>
       <option value="locrian">Locrian</option>
-      <option value="pent_major">Pentatonic Major</option>
-      <option value="pent_minor">Pentatonic Minor</option>
-      <option value="chromatic">Chromatic (All Notes)</option>
+      <option value="harmonic_minor">Harmonic Minor</option>
+      <option value="melodic_minor">Melodic Minor</option>
+      <option value="pentatonic_major">Pentatonic Major</option>
+      <option value="pentatonic_minor">Pentatonic Minor</option>
     </select>
 
-    <!-- 🎵 Note Range Controls -->
-    <div id="noteRangeControls" style="margin-top:10px;">
-      <label for="lowNoteSelect">Low:</label>
-      <select id="lowNoteSelect"></select>
-      <label for="highNoteSelect">High:</label>
-      <select id="highNoteSelect"></select>
-    </div>
-
-    <button id="playRandom">Play One Note</button>
-    <button id="playChord">Play One Chord</button>
-    <button id="playChordLoop">Chord Loop</button>
-    <button id="startLoop">Note Loop</button>
-    <button id="stopLoop" disabled>Stop</button>
+    <label for="presetSelect">Sound:</label>
+    <select id="presetSelect"></select>
   </div>
 
-  <!-- 🎹 Keyboard -->
-  <div id="keyboard">
+  <div style="margin-top:10px;">
+    <label for="lowNoteSelect">Low:</label>
+    <select id="lowNoteSelect"></select>
+
+    <label for="highNoteSelect">High:</label>
+    <select id="highNoteSelect"></select>
+  </div>
+
+  <div style="margin-top:10px;">
+    <button id="startMelody">Start Melody</button>
+    <button id="stopMelody" disabled>Stop</button>
+    <button id="loopModeToggle">Loop Mode: Melody</button>
+  </div>
+
+  <div id="keyboard" style="margin-top:20px;">
     <div class="white-keys" id="whiteKeys"></div>
     <div class="black-keys" id="blackKeys"></div>
   </div>
 
-  <p id="status">Loading SoundFont…</p>
+  <div id="status">Loading SoundFont…</div>
 
-  <!-- 🎚 THREE-COLUMN CONTROL PANEL -->
+  <!-- CONTROL PANEL -->
   <div id="controlPanel">
 
     <!-- ★ Duration Mixer -->
@@ -261,13 +264,32 @@
       <label>Rest Probability</label><input type="range" id="restSlider" min="0" max="100" value="20"><span id="restValue">20%</span>
       <label>Timing Variation</label><input type="range" id="timingSlider" min="0" max="60" value="30"><span id="timingValue">30 ms</span>
 
-      <div id="intervalMixer" style="margin-top:12px;">
-        <label>Same Note</label><input type="range" id="w0" min="0" max="50" value="15"><span id="v0">15%</span>
-        <label>2nds</label><input type="range" id="w2" min="0" max="50" value="30"><span id="v2">30%</span>
-        <label>3rds</label><input type="range" id="w3" min="0" max="50" value="20"><span id="v3">20%</span>
-        <label>4ths</label><input type="range" id="w5" min="0" max="50" value="10"><span id="v5">10%</span>
-        <label>5ths</label><input type="range" id="w7" min="0" max="50" value="8"><span id="v7">8%</span>
-        <label>6ths / Octaves</label><input type="range" id="w9" min="0" max="50" value="4"><span id="v9">4%</span>
+      <div id="intervalMixer" style="width:100%; margin-top:12px; padding-top:10px; border-top:1px solid #444;">
+        <div style="display:flex; gap:10px; align-items:center; justify-content:center; margin-bottom:8px;">
+          <div style="font-size:0.95em; color:#ffe680;">Intervals (true semitones)</div>
+          <label style="font-size:0.85em; opacity:0.9;">Mode</label>
+          <select id="intervalModeSelect" style="padding:4px;">
+            <option value="snap">Snap to Scale</option>
+            <option value="chromatic">Chromatic</option>
+          </select>
+        </div>
+
+        <div id="intervalMixerGrid"
+             style="display:grid; grid-template-columns:100px 140px 55px; row-gap:6px; column-gap:6px; align-items:center; justify-content:center; font-size:0.85em;">
+          <label>Unison (0)</label><input type="range" id="iw0" min="0" max="50" value="15"><span id="iv0">15%</span>
+          <label>m2 (1)</label><input type="range" id="iw1" min="0" max="50" value="10"><span id="iv1">10%</span>
+          <label>M2 (2)</label><input type="range" id="iw2" min="0" max="50" value="20"><span id="iv2">20%</span>
+          <label>m3 (3)</label><input type="range" id="iw3" min="0" max="50" value="10"><span id="iv3">10%</span>
+          <label>M3 (4)</label><input type="range" id="iw4" min="0" max="50" value="12"><span id="iv4">12%</span>
+          <label>P4 (5)</label><input type="range" id="iw5" min="0" max="50" value="8"><span id="iv5">8%</span>
+          <label>Tritone (6)</label><input type="range" id="iw6" min="0" max="50" value="2"><span id="iv6">2%</span>
+          <label>P5 (7)</label><input type="range" id="iw7" min="0" max="50" value="8"><span id="iv7">8%</span>
+          <label>m6 (8)</label><input type="range" id="iw8" min="0" max="50" value="4"><span id="iv8">4%</span>
+          <label>M6 (9)</label><input type="range" id="iw9" min="0" max="50" value="6"><span id="iv9">6%</span>
+          <label>m7 (10)</label><input type="range" id="iw10" min="0" max="50" value="2"><span id="iv10">2%</span>
+          <label>M7 (11)</label><input type="range" id="iw11" min="0" max="50" value="2"><span id="iv11">2%</span>
+          <label>Octave (12)</label><input type="range" id="iw12" min="0" max="50" value="2"><span id="iv12">2%</span>
+        </div>
       </div>
     </div>
 
@@ -319,43 +341,19 @@
       <button class="patternSlot" data-slot="C">C</button>
       <button class="patternSlot" data-slot="D">D</button>
     </div>
-    <button id="startRecord">Record</button>
+
+    <button id="startRecord">Start Rec</button>
     <button id="stopRecord" disabled>Stop Rec</button>
     <button id="playPattern">Play Pattern</button>
     <button id="clearPattern">Clear</button>
-    <span id="patternInfo">Active Pattern: A | No events recorded.</span>
+
+    <button id="exportPreset">Export Preset</button>
+    <button id="importPreset">Import Preset</button>
+    <input id="presetFile" type="file" accept=".json" style="display:none" />
+
+    <span id="patternInfo"></span>
   </div>
 
-  <!-- PRESET SECTION (JSON) -->
-  <div id="presetControls" style="margin-top:14px; width:90%; max-width:1200px;">
-    <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
-    <div style="margin-bottom:6px;">
-    <label for="presetName" style="opacity:0.85;">Preset name:</label>
-    <input
-      id="presetName"
-      type="text"
-      placeholder="My Awesome Preset"
-      style="margin-left:8px; padding:4px 8px; width:260px;"
-    />
-  </div>  
-      <button id="exportPreset">Export Preset (JSON)</button>
-
-      <!-- ✅ Patch 2: Import / Apply -->
-      <button id="importPreset">Import / Apply Preset</button>
-      <input id="presetFile" type="file" accept="application/json" />
-
-      <span style="opacity:0.8; font-size:0.95rem;">Preset JSON:</span>
-    </div>
-
-    <textarea id="presetText" rows="6" spellcheck="false"
-      style="width:100%; margin-top:8px; background:#111; color:#eaeaea; border:1px solid #444; border-radius:10px; padding:10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace; font-size:0.9rem; resize:vertical;"
-      placeholder="Click Export Preset (JSON) to generate a preset here…"></textarea>
-  </div>
-
-  
-  <!-- Scripts -->
-  <script src="https://cdn.jsdelivr.net/npm/soundfont-player@0.12.0/dist/soundfont-player.js"></script>
   <script src="soundfont_keyboardBase12.js"></script>
-
 </body>
 </html>
